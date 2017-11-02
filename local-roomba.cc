@@ -20,6 +20,7 @@ int main(int argc, char *argv[]){
 	double speed;            // How fast do we want the robot to go forwards?
 	double turnrate;         // How fast do we want the robot to turn?
 	player_pose2d_t  pose;   // For handling localization data
+	double myAngle = 0, diffX = 0, diffY = 0;
 
   // Set up proxies. These are the names we will use to connect to 
   // the interface to the robot.
@@ -32,35 +33,34 @@ int main(int argc, char *argv[]){
 	pp.SetMotorEnable(true);
 
   // Main control loop
-	while(true) {    
+	do {    
     	robot.Read();				// Update information from the robot.
     	pose = readPosition(lp);	// Read new information about position
 		printRobotData(bp, pose);	// Print data on the robot to the terminal
-
-    	// If either bumper is pressed, stop. Otherwise just go forwards
+		
+		diffY = -3.5 - pose.py;
+		diffX = 5 - pose.px;
+		myAngle = atan2(diffY, diffX);
+		std::cout << "My angle: " << myAngle << std::endl;
+    	
     	if(bp[0] || bp[1]){
 			speed= 0;
 			turnrate= 0;
     	} 
-    	else if (pose.pa < atan2(2.5,11)) {
-    		speed = 0;
-    		turnrate = .1;
-    	}
-    	else if (pose.pa < atan2(2.5,11)) {
-    		speed = 0;
-    		turnrate = -.1;
-    	}
     	else {
-			speed=.1;
-	  		turnrate = 0;
-      	}     
+    		turnrate = myAngle - pose.pa;
+			if (myAngle - pose.pa < 0.0001)
+				speed = sqrt(diffX*diffX+diffY*diffY);
+			else
+				speed = 0;
+      	}
 
     	std::cout << "Speed: " << speed << std::endl;      
     	std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 
     	pp.SetSpeed(speed, turnrate);  
     	counter++;
-    }
+    } while (pose.px < 4.9999);
 } // end of main()
 
 
@@ -87,6 +87,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
 
   	return pose;
 }
+
 
 /*
  *  printRobotData
