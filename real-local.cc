@@ -22,7 +22,8 @@ int main(int argc, char *argv[]) {
 	double turnrate;        
 	player_pose2d_t  pose;   // For handling localization data
 	player_laser_data laser; // For handling laser data
-
+	bool locationFound = false;
+	
 	// Set up proxies. These are the names we will use to connect to 
 	// the interface to the robot.
 	PlayerClient    robot("localhost");  
@@ -32,32 +33,20 @@ int main(int argc, char *argv[]) {
 	LaserProxy      sp (&robot, 0);
 
 	pp.SetMotorEnable(true);
+	
+	speed = 0;
+    turnrate = .1;
 
-	//Control loop
-	while(true) {    
-      
+	pp.SetSpeed(speed, turnrate);  
+	std::cout << "Speed: " << speed << std::endl;      
+	std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+
+	while (!locationFound) {
     	robot.Read();				//Update information
     	pose = readPosition(lp);	//Read position
-
-		if(counter > 2)	{			//Counter checks for errors on startup
-			printLaserData(sp);		//Prints laser data
-		}
-			
-      	printRobotData(bp, pose);	//Print data to the terminal
-      
-      	if(bp[0] || bp[1]){			//Stop if either bumper is pressed
-			speed= 0;
-			turnrate= 0;
-      	} else {					//Else go forward
-			speed=.1;
-        	turnrate = 0;
-      	}     
-
-      	std::cout << "Speed: " << speed << std::endl;      
-      	std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-
-      	pp.SetSpeed(speed, turnrate);  
-      	counter++;					//Increment number of loops
+		if (lp.GetHypothCount() > 0)
+			if (lp.GetHypoth(0).alpha > .9 && lp.GetHypothCount() < 4)
+				locationFound = true;
     }
 }
 
@@ -100,8 +89,8 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
     		std::cout << "Y: " << pose.py << "\t";
     		std::cout << "A: " << pose.pa << "\t";
     		std::cout << "W: " << weight  << std::endl;
-    }
-}
+		}
+	}
 
   // This just returns the mean of the last hypothesis, it isn't necessarily
   // the right one.
