@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include <cstdlib>
-#include <ctime>
 #include <cmath>
 #include <string>
 #include <libplayerc++/playerc++.h>
@@ -24,9 +23,7 @@ int main(int argc, char *argv[]) {
 	double speed, turnrate;        
 	player_pose2d_t pose;   // For handling localization data
 	player_laser_data laser; // For handling laser data
-	
 	bool locationFound = false;
-	srand(time(NULL));
 	
 	// Set up proxies. These are the names we will use to connect the interface to the robot.
 	PlayerClient robot("localhost");  
@@ -37,10 +34,10 @@ int main(int argc, char *argv[]) {
 
 	pp.SetMotorEnable(true);
 	while (!locationFound) {
-		std::cout << std::endl;
-		chooseRandom("Speed", speed);
-		chooseRandom("Turn rate", turnrate);
-		pp.SetSpeed(speed, turnrate);  
+		//std::cout << std::endl;
+		//chooseRandom("Speed", speed);
+		//chooseRandom("Turn rate", turnrate);
+		pp.SetSpeed(0.2, 0.1);  
 			
     	robot.Read();				//Update information
     	pose = readPosition(lp);	//Read position
@@ -64,19 +61,22 @@ int main(int argc, char *argv[]) {
 			diffX = 5 - pose.px;
 			diffAngle = atan2(diffY, diffX) - pose.pa;
 			
-			if (sp.MinLeft() < .5)
+			if (sp.MinLeft() < 1)
 				turnrate = -1;
-			else if (sp.MinRight() < .5)
+			else if (sp.MinRight() < 1)
 				turnrate = 1;
 			else
 				turnrate = diffAngle;
 			
-			if (bp[0] || bp[1] || pp.GetStall())
-				speed = -1;
-			else if (diffAngle < 0.0001 || sp.MinLeft() < .5 || sp.MinRight() < .5)
-				speed = sqrt(diffX*diffX+diffY*diffY);
-			else
+			if (bp[0] || bp[1] || pp.GetStall()) {
+				if (pp.GetStall() && rand()%2 == 0)
+					speed = 1.0;
+				else speed = -1.0;
+			}
+			else if (diffAngle > 0.0001 || sp.MinLeft() < 1 || sp.MinRight() < 1)
 				speed = 0;
+			else
+				speed = sqrt(diffX*diffX+diffY*diffY);
 
 			std::cout << "Speed: " << speed << std::endl;      
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
