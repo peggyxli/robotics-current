@@ -34,11 +34,7 @@ int main(int argc, char *argv[]) {
 
 	pp.SetMotorEnable(true);
 	while (!locationFound) {
-		//std::cout << std::endl;
-		//chooseRandom("Speed", speed);
-		//chooseRandom("Turn rate", turnrate);
-		pp.SetSpeed(0.2, 0.1);  
-			
+		pp.SetSpeed(0.2, 0.1);	
     	robot.Read();				//Update information
     	pose = readPosition(lp);	//Read position
 		if (lp.GetHypothCount() > 0)
@@ -61,19 +57,25 @@ int main(int argc, char *argv[]) {
 			diffX = 5 - pose.px;
 			diffAngle = atan2(diffY, diffX) - pose.pa;
 			
-			if (sp.MinLeft() < 1)
+			if (sp.MinLeft() < .5)
 				turnrate = -1;
-			else if (sp.MinRight() < 1)
+			else if (sp.MinRight() < .5)
 				turnrate = 1;
 			else
 				turnrate = diffAngle;
 			
-			if (bp[0] || bp[1] || pp.GetStall()) {
-				if (pp.GetStall() && rand()%2 == 0)
-					speed = 1.0;
-				else speed = -1.0;
-			}
-			else if (diffAngle > 0.0001 || sp.MinLeft() < 1 || sp.MinRight() < 1)
+			if (bp[0] || bp[1] || pp.GetStall()) 
+				break;
+			//{
+			//	if (pp.GetStall() && rand()%2 == 0)
+			//		speed = 1.0;
+			//	else speed = -1.0;
+			//}
+			else if (sp.MinLeft() < .5)
+				speed = sp.MinLeft()/2;
+			else if (sp.MinRight() < .5)
+				speed = sp.MinRight()/2;
+			else if (diffAngle > 0.0001)	
 				speed = 0;
 			else
 				speed = sqrt(diffX*diffX+diffY*diffY);
@@ -122,7 +124,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
 
 	hCount = lp.GetHypothCount();
 
-	std::cout << "AMCL gives us " << hCount + 1 
+	std::cout << "\nAMCL gives us " << hCount + 1 
             << " possible locations:" << std::endl;
 
 	if(hCount > 0){
