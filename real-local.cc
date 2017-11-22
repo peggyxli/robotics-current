@@ -7,6 +7,10 @@
 
 
 #include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
+#include <string>
 #include <libplayerc++/playerc++.h>
 using namespace PlayerCc;  
 
@@ -14,40 +18,81 @@ using namespace PlayerCc;
 player_pose2d_t readPosition(LocalizeProxy& lp);
 void printLaserData(LaserProxy& sp);
 void printRobotData(BumperProxy& bp, player_pose2d_t pose);
+void chooseRandom(std::string, double&);
 
 int main(int argc, char *argv[]) {  
-
-	int counter = 0;
-	double speed;           
-	double turnrate;        
-	player_pose2d_t  pose;   // For handling localization data
+	double speed, turnrate;        
+	player_pose2d_t pose;   // For handling localization data
 	player_laser_data laser; // For handling laser data
-	bool locationFound = false;
 	
-	// Set up proxies. These are the names we will use to connect to 
-	// the interface to the robot.
-	PlayerClient    robot("localhost");  
-	BumperProxy     bp(&robot,0);  
+	bool locationFound = false;
+	srand(time(NULL));
+	
+	// Set up proxies. These are the names we will use to connect the interface to the robot.
+	PlayerClient robot("localhost");  
+	BumperProxy bp(&robot,0);  
 	Position2dProxy pp(&robot,0);
-	LocalizeProxy   lp (&robot, 0);
-	LaserProxy      sp (&robot, 0);
+	LocalizeProxy lp (&robot, 0);
+	LaserProxy sp (&robot, 0);
 
 	pp.SetMotorEnable(true);
-	
-	speed = 0;
-    turnrate = .1;
-
-	pp.SetSpeed(speed, turnrate);  
-	std::cout << "Speed: " << speed << std::endl;      
-	std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-
 	while (!locationFound) {
+		std::cout << std::endl;
+		chooseRandom("Speed", speed);
+		chooseRandom("Turn rate", turnrate);
+		pp.SetSpeed(speed, turnrate);  
+			
     	robot.Read();				//Update information
     	pose = readPosition(lp);	//Read position
 		if (lp.GetHypothCount() > 0)
 			if (lp.GetHypoth(0).alpha > .9 && lp.GetHypothCount() < 4)
 				locationFound = true;
     }
+
+	if (pose.px > -8 && pose.px < -4 && pose.py > -8 && pose.py < -4) {
+		std::cout << "\nSuccess!\nI am at (" << pose.px << "," << pose.py << ").\n"
+				  << "I am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
+		
+		double diffAngle = 0, diffX = 0, diffY = 0;
+		while (pose.px < 4.9999 || diffAngle > 0.0001) {
+			robot.Read();
+			pose = readPosition(lp);
+			printRobotData(bp, pose);
+			printLaserData(sp);
+			
+			diffY = -3.5 - pose.py;
+			diffX = 5 - pose.px;
+			diffAngle = atan2(diffY, diffX) - pose.pa;
+			
+			if (sp.MinLeft() < .5)
+				turnrate = -1;
+			else if (sp.MinRight() < .5)
+				turnrate = 1;
+			else
+				turnrate = diffAngle;
+			
+			if (bp[0] || bp[1] || pp.GetStall())
+				speed = -1;
+			else if (diffAngle < 0.0001 || sp.MinLeft() < .5 || sp.MinRight() < .5)
+				speed = sqrt(diffX*diffX+diffY*diffY);
+			else
+				speed = 0;
+
+			std::cout << "Speed: " << speed << std::endl;      
+			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+			pp.SetSpeed(speed, turnrate);
+		}
+		
+		std::cout << "\nSuccess!\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
+	}
+}
+
+void chooseRandom (std::string attributeName, double& myVariable) {
+	int randomNumber = rand()%2;
+	if (randomNumber == 0)
+		myVariable = 0;
+	else myVariable = .1;
+	std::cout << attributeName << ": " << myVariable << std::endl;
 }
 
 
@@ -90,12 +135,9 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
     		std::cout << "A: " << pose.pa << "\t";
     		std::cout << "W: " << weight  << std::endl;
 		}
+		return lp.GetHypoth(0).mean;
 	}
-
-  // This just returns the mean of the last hypothesis, it isn't necessarily
-  // the right one.
-
-  return pose;
+	return pose;
 }
 
 //Take laser readins and print laser data

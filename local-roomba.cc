@@ -57,9 +57,7 @@ int main(int argc, char *argv[]){
 
     	std::cout << "Speed: " << speed << std::endl;      
     	std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-
     	pp.SetSpeed(speed, turnrate);  
-    	counter++;
     } while (pose.px < 4.9999);
 } // end of main()
 
