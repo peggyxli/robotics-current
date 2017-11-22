@@ -53,32 +53,25 @@ int main(int argc, char *argv[]) {
 			printRobotData(bp, pose);
 			printLaserData(sp);
 			
-			diffY = -3.5 - pose.py;
-			diffX = 5 - pose.px;
-			diffAngle = atan2(diffY, diffX) - pose.pa;
-			
-			if (sp.MinLeft() < .5)
-				turnrate = -1;
-			else if (sp.MinRight() < .5)
-				turnrate = 1;
-			else
-				turnrate = diffAngle;
-			
-			if (bp[0] || bp[1] || pp.GetStall()) 
-				break;
-			//{
-			//	if (pp.GetStall() && rand()%2 == 0)
-			//		speed = 1.0;
-			//	else speed = -1.0;
-			//}
-			else if (sp.MinLeft() < .5)
+			if (sp.MinLeft() < .5) {
+				turnrate = sp.MinLeft() - 2;
 				speed = sp.MinLeft()/2;
-			else if (sp.MinRight() < .5)
+			}
+			else if (sp.MinRight() < .5) {
+				turnrate = 2 - sp.MinRight();
 				speed = sp.MinRight()/2;
-			else if (diffAngle > 0.0001)	
-				speed = 0;
-			else
-				speed = sqrt(diffX*diffX+diffY*diffY);
+			}
+			else {
+				diffY = -3.5 - pose.py;
+				diffX = 5 - pose.px;
+				diffAngle = atan2(diffY, diffX) - pose.pa;
+				
+				turnrate = diffAngle;
+				if (diffAngle > 0.0001)	
+					speed = 0;
+				else
+					speed = sqrt(diffX*diffX+diffY*diffY);
+			}
 
 			std::cout << "Speed: " << speed << std::endl;      
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
@@ -87,14 +80,6 @@ int main(int argc, char *argv[]) {
 		
 		std::cout << "\nSuccess!\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
 	}
-}
-
-void chooseRandom (std::string attributeName, double& myVariable) {
-	int randomNumber = rand()%2;
-	if (randomNumber == 0)
-		myVariable = 0;
-	else myVariable = .1;
-	std::cout << attributeName << ": " << myVariable << std::endl;
 }
 
 
