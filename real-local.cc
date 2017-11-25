@@ -9,7 +9,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <cmath>
-#include <string>
 #include <libplayerc++/playerc++.h>
 using namespace PlayerCc;  
 
@@ -43,7 +42,8 @@ int main(int argc, char *argv[]) {
     }
 
 	if (pose.px > -8 && pose.px < -4 && pose.py > -8 && pose.py < -4) {
-		std::cout << "\nSuccess!\nI am at (" << pose.px << "," << pose.py << ").\n"
+		std::cout << "\nSuccess!\nI have successfully located my position;"
+		std::cout << "\nI am at (" << pose.px << "," << pose.py << ").\n"
 				  << "I am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
 		
 		double diffAngle = 0, diffX = 0, diffY = 0;
@@ -109,8 +109,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
 
 	hCount = lp.GetHypothCount();
 
-	std::cout << "\nAMCL gives us " << hCount + 1 
-            << " possible locations:" << std::endl;
+	std::cout << "\nAMCL gives us " << hCount + 1 << " possible locations:" << std::endl;
 
 	if(hCount > 0){
 	    for(int i = 0; i <= hCount; i++){
@@ -122,35 +121,23 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
     		std::cout << "A: " << pose.pa << "\t";
     		std::cout << "W: " << weight  << std::endl;
 		}
-		return lp.GetHypoth(0).mean;
+		return lp.GetHypoth(0).mean;	//return most likely hypothesis
 	}
 	return pose;
 }
 
-//Take laser readins and print laser data
+
+//Take laser readings and print laser data
 void printLaserData(LaserProxy& sp) {
-
-double maxRange, minLeft, minRight, range, bearing;
-	int points;
-
-	maxRange  = sp.GetMaxRange();
-	minLeft   = sp.MinLeft();
-	minRight  = sp.MinRight();
-	range     = sp.GetRange(5);
-	bearing   = sp.GetBearing(5);
-	points    = sp.GetCount();
-
 	//Print out laser data
 	std::cout << "Laser says..." << std::endl;
-	std::cout << "Maximum distance I can see: " << maxRange << std::endl;
-	std::cout << "Number of readings I return: " << points << std::endl;
-	std::cout << "Closest thing on left: " << minLeft << std::endl;
-	std::cout << "Closest thing on right: " << minRight << std::endl;
-	std::cout << "Range of a single point: " << range << std::endl;
-	std::cout << "Bearing of a single point: " << bearing << std::endl;
-
+	std::cout << "Maximum distance I can see: " << sp.GetMaxRange() << std::endl;
+	std::cout << "Number of readings I return: " << sp.GetCount() << std::endl;
+	std::cout << "Closest thing on left: " << sp.MinLeft() << std::endl;
+	std::cout << "Closest thing on right: " << sp.MinRight() << std::endl;
 	return;
 }
+
 
 //Print bumpers and location
 void printRobotData(BumperProxy& bp, player_pose2d_t pose) {
@@ -161,5 +148,6 @@ void printRobotData(BumperProxy& bp, player_pose2d_t pose) {
 	std::cout << "We are at" << std::endl;
 	std::cout << "X: " << pose.px << std::endl;
 	std::cout << "Y: " << pose.py << std::endl;
-	std::cout << "A: " << pose.pa << std::endl; 
+	std::cout << "A: " << pose.pa << std::endl;
+	return;
 }
