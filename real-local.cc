@@ -19,35 +19,34 @@ void printRobotData(BumperProxy& bp, player_pose2d_t pose);
 void chooseRandom(std::string, double&);
 
 int main(int argc, char *argv[]) {  
-	double speed, turnrate;        
+	//set up proxies to connect the interface to the robot
 	player_pose2d_t pose;   // For handling localization data
 	player_laser_data laser; // For handling laser data
-	bool locationFound = false;
-	
-	// Set up proxies. These are the names we will use to connect the interface to the robot.
 	PlayerClient robot("localhost");  
 	BumperProxy bp(&robot,0);  
 	Position2dProxy pp(&robot,0);
 	LocalizeProxy lp (&robot, 0);
 	LaserProxy sp (&robot, 0);
-
+	
+	bool locationFound = false;
 	pp.SetMotorEnable(true);
-	while (!locationFound) {
-		pp.SetSpeed(0.2, 0.1);	
-    	robot.Read();				//Update information
-    	pose = readPosition(lp);	//Read position
+	pp.SetSpeed(0.2, 0.1);
+
+	while (!locationFound) {	
+    	robot.Read();
+    	pose = readPosition(lp);
 		if (lp.GetHypothCount() > 0)
-			if (lp.GetHypoth(0).alpha > .9 && lp.GetHypothCount() < 4)
-				locationFound = true;
+			if (lp.GetHypoth(0).alpha > .9 && lp.GetHypothCount() < 3)
+				locationFound = true;	
     }
 
-	if (pose.px > -8 && pose.px < -4 && pose.py > -8 && pose.py < -4) {
-		std::cout << "\nSuccess!\nI have successfully located my position";
-		std::cout << "\nI am at (" << pose.px << "," << pose.py << ").\n"
-				  << "I am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
-		
-		double diffAngle = 0, diffX = 0, diffY = 0;
-		while (pose.px < 4.9999 || diffAngle > 0.0001) {
+	if (pose.px < -4 && pose.py < -4) {
+		std::cout << "\nSuccess!\nI have successfully located my position.";
+		std::cout << "\nI am at (" << pose.px << "," << pose.py << ").";
+		std::cout << "\nI am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
+				  
+		double speed, turnrate, diffY, diffX, diffAngle;
+		while (pose.px < 5 || pose.py < -3.5) {
 			robot.Read();
 			pose = readPosition(lp);
 			printRobotData(bp, pose);
@@ -67,18 +66,17 @@ int main(int argc, char *argv[]) {
 				diffAngle = atan2(diffY, diffX) - pose.pa;
 				
 				turnrate = diffAngle;
-				if (diffAngle > 0.001)	
-					speed = 0;
-				else
-					speed = sqrt(diffX*diffX+diffY*diffY);
+				if (diffAngle < 0.001)	
+					speed = sqrt(diffY*diffY+diffX*diffX);
+				else speed = 0;
 			}
 
 			std::cout << "Speed: " << speed << std::endl;      
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-		
-		std::cout << "\nSuccess!\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
+		std::cout << "\nSuccess!\nI have successfully navigated my final position.";
+		std::cout << "\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
 	}
 }
 
@@ -97,7 +95,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
 	
 	//Print AMCL data
 	std::cout << "\nAMCL gives us " << hCount + 1 << " possible locations:" << std::endl;
-	if(hCount > 0){
+	if(hCount > 0){	//check first, to avoid seg fault when booting up
 	    for(int i = 0; i <= hCount; i++){
     		pose       = lp.GetHypoth(i).mean;
     		weight     = lp.GetHypoth(i).alpha;
