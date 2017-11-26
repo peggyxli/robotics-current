@@ -1,102 +1,82 @@
-/**
- * local-roomba.cc
- **/
-
+/*
+ * Robotics class project #4, part 1
+ * Modified version of local-roomba.cc, originally written by Simon Parsons
+ * Used to navigate a Roomba/Create to a specified location
+ * Group 5: Randolph Cisneros, Arsenii Lyzenko, Peggy Li
+ */
 
 #include <iostream>
-#include <libplayerc++/playerc++.h>
 #include <cmath>
+#include <cstdlib>
+#include <libplayerc++/playerc++.h>
 using namespace PlayerCc;  
 
-/**
- * Function headers
- **/
+//Function headers
 player_pose2d_t readPosition(LocalizeProxy& lp);
 void printRobotData(BumperProxy& bp, player_pose2d_t pose);
 
+
 int main(int argc, char *argv[]){  
-
-	int counter = 0;
-	double speed;            // How fast do we want the robot to go forwards?
-	double turnrate;         // How fast do we want the robot to turn?
-	player_pose2d_t  pose;   // For handling localization data
-	double myAngle = 0, diffX = 0, diffY = 0;
-
-  // Set up proxies. These are the names we will use to connect to 
-  // the interface to the robot.
+	//set up proxies to connect the interface to the robot
+	player_pose2d_t  pose;
 	PlayerClient    robot("localhost");  
 	BumperProxy     bp(&robot,0);  
 	Position2dProxy pp(&robot,0);
 	LocalizeProxy   lp (&robot, 0);
-
-  // Allow the program to take charge of the motors (take care now)
+	
+	double speed, turnrate, diffY, diffX, diffAngle;
 	pp.SetMotorEnable(true);
-
-  // Main control loop
-	do {    
-    	robot.Read();				// Update information from the robot.
-    	pose = readPosition(lp);	// Read new information about position
-		printRobotData(bp, pose);	// Print data on the robot to the terminal
+	do {
+		//update and print information from the robot
+    	robot.Read();
+    	pose = readPosition(lp);
+		printRobotData(bp, pose);
 		
-		diffY = -3.5 - pose.py;
-		diffX = 5 - pose.px;
-		myAngle = atan2(diffY, diffX);
-		std::cout << "My angle: " << myAngle << std::endl;
-    	
-    	if(bp[0] || bp[1]){
-			speed= 0;
-			turnrate= 0;
+    	if(bp[0] || bp[1]) {	//obstacle navigation
+			turnrate = 1.0;
+			if (rand()%2 == 0)
+				speed = 1.0;
+			else speed = -1.0;
     	} 
-    	else {
-    		turnrate = myAngle - pose.pa;
-			if (myAngle - pose.pa < 0.0001)
-				speed = sqrt(diffX*diffX+diffY*diffY);
-			else
-				speed = 0;
-      	}
-
+    	else {	//locate and move towards position
+			//calculate angle needed to move to end position
+			diffY = -3.5 - pose.py;
+			diffX = 5 - pose.px;
+			diffAngle = atan2(diffY, diffX) - pose.pa;
+			
+			turnrate = diffAngle;	//set turnrate
+			if (diffAngle < 0.001)	//move to position
+				speed = sqrt(diffY*diffY+diffX*diffX);
+			else speed = 0;	//stay in place and find angle
+		}
     	std::cout << "Speed: " << speed << std::endl;      
     	std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
     	pp.SetSpeed(speed, turnrate);  
     } while (pose.px < 4.9999);
-} // end of main()
+}
 
 
-/*
- * readPosition()
+/* Function provided by sample code
  * Read the position of the robot from the localization proxy. 
- * The localization proxy gives us a hypothesis, and from that we extract
- * the mean, which is a pose. 
+ * The localization proxy gives us a hypothesis, and from that we extract the mean, which is a pose. 
  */
 player_pose2d_t readPosition(LocalizeProxy& lp) {
-	player_localize_hypoth_t hypothesis;
-	player_pose2d_t          pose;
-	uint32_t                 hCount;
+	player_pose2d_t pose;
+	uint32_t hCount = lp.GetHypothCount();
 
-	// Need some messing around to avoid a crash when the proxy is
-	// starting up.
-
-	hCount = lp.GetHypothCount();
-
-	if(hCount > 0){
-		hypothesis = lp.GetHypoth(0);
-    	pose       = hypothesis.mean;
-  	}
-
+	if(hCount > 0)
+    	pose = lp.GetHypoth(0).mean;
   	return pose;
 }
 
 
-/*
- *  printRobotData
- * Print out data on the state of the bumpers and the current location
- * of the robot.
- **/
+/* Function provided by sample code
+ * Print bumpers and location
+ */
 void printRobotData(BumperProxy& bp, player_pose2d_t pose){
-	// Print out what the bumpers tell us:
+	// Print out what the bumpers tell us
 	std::cout << "Left  bumper: " << bp[0] << std::endl;
 	std::cout << "Right bumper: " << bp[1] << std::endl;
-
 	// Print out where we are
 	std::cout << "We are at" << std::endl;
 	std::cout << "X: " << pose.px << std::endl;
