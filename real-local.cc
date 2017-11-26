@@ -1,10 +1,10 @@
-/**
- * real-local.cc
- * This version is intended to run with the AMCL localization proxy,
- * which provides multiple hypotheses.
- * 
- **/
-
+/*
+ * Robotics class project #4, part 2
+ * Modified version of real-local.cc, originally written by Simon Parsons
+ * Uses the AMCL localization proxy and laser data to determine a robot's location and 
+ * navigate to a specified location
+ * Group 5: Randolph Cisneros, Arsenii Lyzenko, Peggy Li
+ */
 
 #include <iostream>
 #include <cstdlib>
@@ -33,51 +33,54 @@ int main(int argc, char *argv[]) {
 	outfile.open("log.txt");
 	
 	pp.SetMotorEnable(true);
-	pp.SetSpeed(0.2, 0.1);
+	pp.SetSpeed(0.2, 0.1);	//set speed and turn rate; move around to localize
 
+	//run localization algorithm
 	while (!locationFound) {	
     	robot.Read();
     	pose = readPosition(lp, outfile);
-		if (lp.GetHypothCount() > 0)
+		if (lp.GetHypothCount() > 0)	//check to avoid seg fault when booting
 			if (lp.GetHypoth(0).alpha > .9 && lp.GetHypothCount() < 3)
 				locationFound = true;	
     }
 
-	if (pose.px < -4 && pose.py < -4) {
+	if (pose.px < -4 && pose.py < -4) {	//check if localization succeeded
+		//print success message
 		outfile << "\nSuccess!\nI have successfully located my position.";
 		outfile << "\nI am at (" << pose.px << "," << pose.py << ").";
 		outfile << "\nI am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
 				  
 		double speed, turnrate, diffY, diffX, diffAngle;
-		while (pose.px < 5 || pose.py < -3.5) {
+		while (pose.px < 5 || pose.py < -3.5) {	//navigate to position
 			robot.Read();
 			pose = readPosition(lp, outfile);
 			printRobotData(bp, pose, outfile);
 			printLaserData(sp, outfile);
 			
-			if (sp.MinLeft() < .5) {
+			if (sp.MinLeft() < .5) { //obstacle avoidance
 				turnrate = sp.MinLeft() - 2;
 				speed = sp.MinLeft()/2;
 			}
-			else if (sp.MinRight() < .5) {
+			else if (sp.MinRight() < .5) {	//obstacle avoidance
 				turnrate = 2 - sp.MinRight();
 				speed = sp.MinRight()/2;
 			}
-			else {
+			else {	//locate and move towards position
 				diffY = -3.5 - pose.py;
 				diffX = 5 - pose.px;
 				diffAngle = atan2(diffY, diffX) - pose.pa;
 				
 				turnrate = diffAngle;
-				if (diffAngle < 0.001)	
+				if (diffAngle < 0.001)	//move to position
 					speed = sqrt(diffY*diffY+diffX*diffX);
-				else speed = 0;
+				else speed = 0;	//stay in place and find angle
 			}
-
+			//print info
 			outfile << "Speed: " << speed << std::endl;      
 			outfile << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
+		//print success message
 		outfile << "\nSuccess!\nI have successfully navigated my final position.";
 		outfile << "\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
 	}
@@ -86,7 +89,7 @@ int main(int argc, char *argv[]) {
 }
 
 
-/*
+/* Function provided by sample code
  * Read the position of the robot from the localization proxy. 
  *
  * The localization proxy gives us a set of "hypotheses", 
@@ -114,7 +117,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp, std::ofstream& outfile) {
 	return pose;
 }
 
-
+//Function provided by sample code
 //Take laser readings and print laser data
 void printLaserData(LaserProxy& sp, std::ofstream& outfile) {
 	//Print laser data
@@ -126,7 +129,7 @@ void printLaserData(LaserProxy& sp, std::ofstream& outfile) {
 	return;
 }
 
-
+//Function provided by sample code
 //Print bumpers and location
 void printRobotData(BumperProxy& bp, player_pose2d_t pose, std::ofstream& outfile) {
 	// Print bumpers
