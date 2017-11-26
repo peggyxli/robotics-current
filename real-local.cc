@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     }
 
 	if (pose.px > -8 && pose.px < -4 && pose.py > -8 && pose.py < -4) {
-		std::cout << "\nSuccess!\nI have successfully located my position;"
+		std::cout << "\nSuccess!\nI have successfully located my position";
 		std::cout << "\nI am at (" << pose.px << "," << pose.py << ").\n"
 				  << "I am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
 		
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 				diffAngle = atan2(diffY, diffX) - pose.pa;
 				
 				turnrate = diffAngle;
-				if (diffAngle > 0.0001)	
+				if (diffAngle > 0.001)	
 					speed = 0;
 				else
 					speed = sqrt(diffX*diffX+diffY*diffY);
@@ -83,39 +83,24 @@ int main(int argc, char *argv[]) {
 }
 
 
-/**
- * readPosition()
- *
+/*
  * Read the position of the robot from the localization proxy. 
  *
- * The localization proxy gives us a set of "hypotheses", each of
- * which is a number of possible locations for the robot, and from
- * each we extract the mean, which is a pose.
- *
- * As the number of hypotheses drops, the robot should be more sure
- * of where it is.
- *
- **/
-
+ * The localization proxy gives us a set of "hypotheses", 
+ * each of which is a number of possible locations for the robot,
+ * and from each we extract the mean, which is a pose.
+ */
 player_pose2d_t readPosition(LocalizeProxy& lp) {
-
-	player_localize_hypoth_t hypothesis;
-	player_pose2d_t          pose;
-	uint32_t                 hCount;
-	double                   weight;
-
-	// Need some messing around to avoid a crash when the proxy is
-	// starting up.
-
-	hCount = lp.GetHypothCount();
-
+	player_pose2d_t pose;
+	double weight;
+	uint32_t hCount = lp.GetHypothCount();
+	
+	//Print AMCL data
 	std::cout << "\nAMCL gives us " << hCount + 1 << " possible locations:" << std::endl;
-
 	if(hCount > 0){
 	    for(int i = 0; i <= hCount; i++){
-    		hypothesis = lp.GetHypoth(i);
-    		pose       = hypothesis.mean;
-    		weight     = hypothesis.alpha;
+    		pose       = lp.GetHypoth(i).mean;
+    		weight     = lp.GetHypoth(i).alpha;
     		std::cout << "X: " << pose.px << "\t";
     		std::cout << "Y: " << pose.py << "\t";
     		std::cout << "A: " << pose.pa << "\t";
@@ -129,7 +114,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
 
 //Take laser readings and print laser data
 void printLaserData(LaserProxy& sp) {
-	//Print out laser data
+	//Print laser data
 	std::cout << "Laser says..." << std::endl;
 	std::cout << "Maximum distance I can see: " << sp.GetMaxRange() << std::endl;
 	std::cout << "Number of readings I return: " << sp.GetCount() << std::endl;
