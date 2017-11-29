@@ -30,7 +30,7 @@ window
 # load an environment bitmap
 map
 ( 
-  bitmap "bitmaps/local.png"
+  bitmap "bitmaps/cave_obs.png"
   size [16 16]
   name "cave"
 )
