@@ -27,7 +27,6 @@ void printLaserData(LaserProxy& sp);
 int  readPlanLength(void);
 void readPlan(double *, int);
 void printPlan(double *,int);
-void writePlan(double *, int);
 
 
 int main(int argc, char *argv[])
@@ -65,7 +64,6 @@ int main(int argc, char *argv[])
 	plan = new double[pLength]; // Create enough space to store the plan
 	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
 	printPlan(plan,pLength);    // Print the plan on the screen
-	writePlan(plan, pLength);   // Write the plan to the file plan-out.txt
 
 	for (int i = 0; i < pLength; i = i + 2) {
 		while (std::abs(pose.px - plan[i]) > 0.001 || std::abs(pose.py - plan[i + 1]) > 0.001) {
@@ -208,26 +206,3 @@ void printPlan(double *plan , int length)
   std::cout << std::endl;
 
 } // End of printPlan
-
-
-/**
- * writePlan
- * 
- * Send the plan to the file plan-out.txt, preceeded by the information
- * about how long it is.
- *
- **/
-
-void writePlan(double *plan , int length)
-{
-  std::ofstream planFile;
-  planFile.open("plan-out.txt");
-
-  planFile << length << " ";
-  for(int i = 0; i < length; i++){
-    planFile << plan[i] << " ";
-  }
-
-  planFile.close();
-
-} // End of writePlan
