@@ -23,7 +23,6 @@ using namespace PlayerCc;
 player_pose2d_t readPosition(LocalizeProxy& lp);
 void printRobotData(BumperProxy& bp, player_pose2d_t pose);
 void printLaserData(LaserProxy& sp);
-
 int  readPlanLength(void);
 void readPlan(double *, int);
 
@@ -123,7 +122,7 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
  * Function provided by sample code
  * Print bumpers and location
  **/
-void printRobotData(BumperProxy& bp, player_pose2d_t pose){
+void printRobotData(BumperProxy& bp, player_pose2d_t pose) {
 	// Print out what the bumpers tell us
 	std::cout << "Left  bumper: " << bp[0] << std::endl;
 	std::cout << "Right bumper: " << bp[1] << std::endl;
@@ -140,25 +139,21 @@ void printRobotData(BumperProxy& bp, player_pose2d_t pose){
  * Function provided by sample code
  * Open the file plan.txt and read the first element, which should be an even integer, and return it.
  **/
-int readPlanLength(void)
-{
-  int length;
+int readPlanLength(void) {
+	int length;
+	std::ifstream planFile;
+	planFile.open("plan.txt");
 
-  std::ifstream planFile;
-  planFile.open("plan.txt");
+	planFile >> length;
+	planFile.close();
 
-  planFile >> length;
-  planFile.close();
-
-  // Some minimal error checking
-  if((length % 2) != 0){
-    std::cout << "The plan has mismatched x and y coordinates" << std::endl;
-    exit(1);
-  }
-
-  return length;
-
-} // End of readPlanLength
+	//Some minimal error checking
+	if((length % 2) != 0){
+		std::cout << "The plan has mismatched x and y coordinates" << std::endl;
+		exit(1);
+	}
+	return length;
+}
 
 
 /**
@@ -166,18 +161,13 @@ int readPlanLength(void)
  * Function provided by sample code
  * Given the number of coordinates, read them in from plan.txt and put them in the array plan.
  **/
-void readPlan(double *plan, int length)
-{
-  int skip;
+void readPlan(double *plan, int length) {
+	int skip;
+	std::ifstream planFile;
+	planFile.open("plan.txt");
 
-  std::ifstream planFile;
-  planFile.open("plan.txt");
-
-  planFile >> skip;
-  for(int i = 0; i < length; i++){
-    planFile >> plan[i];
-  }
-
-  planFile.close();
-
-} // End of readPlan
+	planFile >> skip;
+	for(int i = 0; i < length; i++)
+		planFile >> plan[i];
+	planFile.close();
+}
