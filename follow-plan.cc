@@ -32,45 +32,40 @@ void writePlan(double *, int);
 
 int main(int argc, char *argv[])
 {
+	int counter = 0;
+	double speed;            // How fast do we want the robot to go forwards?
+	double turnrate;         // How fast do we want the robot to turn?
+	player_pose2d_t  pose;   // For handling localization data
+	double myAngle = 0, diffX = 0, diffY = 0;
 
-  // Variables
-  int counter = 0;
-  double speed;            // How fast do we want the robot to go forwards?
-  double turnrate;         // How fast do we want the robot to turn?
-  player_pose2d_t  pose;   // For handling localization data
-  double myAngle = 0, diffX = 0, diffY = 0;
+	//The set of coordinates that makes up the plan
+	int pLength;
+	double *plan;
 
-  // The set of coordinates that makes up the plan
+	// Set up proxies. These are the names we will use to connect to 
+	// the interface to the robot.
+	PlayerClient    robot("localhost");
+	BumperProxy     bp(&robot,0);
+	Position2dProxy pp(&robot,0);
+	LocalizeProxy   lp (&robot, 0);
+	LaserProxy      sp (&robot, 0);
 
-  int pLength;
-  double *plan;
+	// Allow the program to take charge of the motors (take care now)
+	pp.SetMotorEnable(true);
 
-  // Set up proxies. These are the names we will use to connect to 
-  // the interface to the robot.
-  PlayerClient    robot("localhost");
-  BumperProxy     bp(&robot,0);
-  Position2dProxy pp(&robot,0);
-  LocalizeProxy   lp (&robot, 0);
-  LaserProxy      sp (&robot, 0);
-
-  // Allow the program to take charge of the motors (take care now)
-  pp.SetMotorEnable(true);
-
-  // Plan handling
-  //
-  // A plan is an integer, n, followed by n doubles (n has to be
-  // even). The first and second doubles are the initial x and y
-  // (respectively) coordinates of the robot, the third and fourth
-  // doubles give the first location that the robot should move to, and
-  // so on. The last pair of doubles give the point at which the robot
-  // should stop.
-  pLength = readPlanLength(); // Find out how long the plan is from plan.txt
-  plan = new double[pLength]; // Create enough space to store the plan
-  readPlan(plan, pLength);    // Read the plan from the file plan.txt.
-  printPlan(plan,pLength);    // Print the plan on the screen
-  writePlan(plan, pLength);   // Write the plan to the file plan-out.txt
-
-
+	// Plan handling
+	//
+	// A plan is an integer, n, followed by n doubles (n has to be
+	// even). The first and second doubles are the initial x and y
+	// (respectively) coordinates of the robot, the third and fourth
+	// doubles give the first location that the robot should move to, and
+	// so on. The last pair of doubles give the point at which the robot
+	// should stop.
+	pLength = readPlanLength(); // Find out how long the plan is from plan.txt
+	plan = new double[pLength]; // Create enough space to store the plan
+	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
+	printPlan(plan,pLength);    // Print the plan on the screen
+	writePlan(plan, pLength);   // Write the plan to the file plan-out.txt
 
 	for (int i = 0; i < pLength; i = i + 2) {
 		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
@@ -90,15 +85,15 @@ int main(int argc, char *argv[])
 			std::cout << "My angle: " << myAngle << std::endl;
 
 			if(bp[0] || bp[1]) {
-			  speed= 0;
-			  turnrate= 0;
+				speed= 0;
+				turnrate= 0;
 			} 
 			else {
-			  turnrate = myAngle - pose.pa;
-			  if (std::abs(myAngle - pose.pa) < 0.0001)
-				speed = sqrt(diffX * diffX + diffY * diffY);
-			  else
-				speed = 0;
+				turnrate = myAngle - pose.pa;
+				if (std::abs(myAngle - pose.pa) < 0.0001)
+					speed = sqrt(diffX * diffX + diffY * diffY);
+				else
+					speed = 0;
 			}
 
 			std::cout << "Speed: " << speed << std::endl;
