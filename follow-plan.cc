@@ -75,7 +75,6 @@ int main(int argc, char *argv[])
 			printRobotData(bp, pose);
 			
 			if (counter++ > 2) {
-				printLaserData(sp);
 				if (sp.MinLeft() < .5) { //obstacle avoidance
 					turnrate = sp.MinLeft() - 2;
 					speed = sp.MinLeft()/2;
@@ -106,87 +105,34 @@ int main(int argc, char *argv[])
 	}
 } // end of main()
 
-/**
- * readPosition()
- *
- * Read the position of the robot from the localization proxy.
- *
- * The localization proxy gives us a hypothesis, and from that we extract
- * the mean, which is a pose.
- *
- **/
 
-player_pose2d_t readPosition(LocalizeProxy& lp)
-{
+/* Function provided by sample code
+ * Read the position of the robot from the localization proxy. 
+ * The localization proxy gives us a hypothesis, and from that we extract the mean, which is a pose. 
+ */
+player_pose2d_t readPosition(LocalizeProxy& lp) {
+	player_pose2d_t pose;
+	uint32_t hCount = lp.GetHypothCount();
 
-  player_localize_hypoth_t hypothesis;
-  player_pose2d_t          pose;
-  uint32_t                 hCount;
-
-  // Need some messing around to avoid a crash when the proxy is
-  // starting up.
-
-  hCount = lp.GetHypothCount();
-
-  if(hCount > 0){
-    hypothesis = lp.GetHypoth(0);
-    pose       = hypothesis.mean;
-  }
-
-  return pose;
-} // End of readPosition()
+	if(hCount > 0)
+    	pose = lp.GetHypoth(0).mean;
+  	return pose;
+}
 
 
-void printLaserData(LaserProxy& sp)
-{
-
-  double maxRange, minLeft, minRight, range, bearing;
-  int points;
-
-  maxRange  = sp.GetMaxRange();
-  minLeft   = sp.MinLeft();
-  minRight  = sp.MinRight();
-  range     = sp.GetRange(5);
-  bearing   = sp.GetBearing(5);
-  points    = sp.GetCount();
-
-  //Uncomment this to print out useful laser data
-  //std::cout << "Laser says..." << std::endl;
-  //std::cout << "Maximum distance I can see: " << maxRange << std::endl;
-  //std::cout << "Number of readings I return: " << points << std::endl;
-  //std::cout << "Closest thing on left: " << minLeft << std::endl;
-  //std::cout << "Closest thing on right: " << minRight << std::endl;
-  //std::cout << "Range of a single point: " << range << std::endl;
-  //std::cout << "Bearing of a single point: " << bearing << std::endl;
-
-  return;
-} // End of printLaserData()
-
-/**
- *  printRobotData
- *
- * Print out data on the state of the bumpers and the current location
- * of the robot.
- *
- **/
-
-void printRobotData(BumperProxy& bp, player_pose2d_t pose)
-{
-
-  // Print out what the bumpers tell us:
-  std::cout << "Left  bumper: " << bp[0] << std::endl;
-  std::cout << "Right bumper: " << bp[1] << std::endl;
-  // Can also print the bumpers with:
-  //std::cout << bp << std::endl;
-
-  // Print out where we are
-  std::cout << "We are at" << std::endl;
-  std::cout << "X: " << pose.px << std::endl;
-  std::cout << "Y: " << pose.py << std::endl;
-  std::cout << "A: " << pose.pa << std::endl;
-
-  
-} // End of printRobotData()
+/* Function provided by sample code
+ * Print bumpers and location
+ */
+void printRobotData(BumperProxy& bp, player_pose2d_t pose){
+	// Print out what the bumpers tell us
+	std::cout << "Left  bumper: " << bp[0] << std::endl;
+	std::cout << "Right bumper: " << bp[1] << std::endl;
+	// Print out where we are
+	std::cout << "We are at" << std::endl;
+	std::cout << "X: " << pose.px << std::endl;
+	std::cout << "Y: " << pose.py << std::endl;
+	std::cout << "A: " << pose.pa << std::endl;
+}
 
 /**
  * readPlanLength
