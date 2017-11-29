@@ -19,11 +19,7 @@
 using namespace PlayerCc;
 
 
-/**
- * Function headers
- *
- **/
-
+//Function headers
 player_pose2d_t readPosition(LocalizeProxy& lp);
 void printRobotData(BumperProxy& bp, player_pose2d_t pose);
 void printLaserData(LaserProxy& sp);
@@ -33,10 +29,6 @@ void readPlan(double *, int);
 void printPlan(double *,int);
 void writePlan(double *, int);
 
-/**
- * main()
- *
- **/
 
 int main(int argc, char *argv[])
 {
@@ -79,82 +71,47 @@ int main(int argc, char *argv[])
   writePlan(plan, pLength);   // Write the plan to the file plan-out.txt
 
 
-  // Main control loop
-/*  while(true)
-    {
-      // Update information from the robot.
-      robot.Read();
-      // Read new information about position
-      pose = readPosition(lp);
-      // Print data on the robot to the terminal
-      printRobotData(bp, pose);
-      // Print information about the laser. Check the counter first to stop
-      // problems on startup
-      if(counter > 2){
-	printLaserData(sp);
-      }
-      // Print data on the robot to the terminal --- turned off for now.
-      // printRobotData(bp, pose);
-      // If either bumper is pressed, stop. Otherwise just go forwards
-      if(bp[0] || bp[1]){
-	speed= 0;
-	turnrate= 0;
-      }
-      else {
-	speed=.1;
-        turnrate = 0;
-      }
-      // What are we doing?
-      std::cout << "Speed: " << speed << std::endl;
-      std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-      // Send the commands to the robot
-      pp.SetSpeed(speed, turnrate);
-      // Count how many times we do this
-      counter++;
-    }*/
 
-  for (int i = 0; i < pLength; i = i + 2)
-  {
-  while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01)
-  {
-    robot.Read();				// Update information from the robot.
-    pose = readPosition(lp);	// Read new information about position
-    printRobotData(bp, pose);	// Print data on the robot to the terminal
+	for (int i = 0; i < pLength; i = i + 2) {
+		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
+			robot.Read();				// Update information from the robot.
+			pose = readPosition(lp);	// Read new information about position
+			printRobotData(bp, pose);	// Print data on the robot to the terminal
 
-    // Print information about the laser. Check the counter first to stop
-    // problems on startup
-    if(counter > 2){
-      printLaserData(sp);
-    }
+			// Print information about the laser. Check the counter first to stop
+			// problems on startup
+			if(counter > 2){
+				printLaserData(sp);
+			}
 
-    diffY = plan[i + 1] - pose.py;
-    diffX = plan[i] - pose.px;
-    myAngle = atan2(diffY, diffX);
-    std::cout << "My angle: " << myAngle << std::endl;
+			diffY = plan[i + 1] - pose.py;
+			diffX = plan[i] - pose.px;
+			myAngle = atan2(diffY, diffX);
+			std::cout << "My angle: " << myAngle << std::endl;
 
-    if(bp[0] || bp[1]) {
-      speed= 0;
-      turnrate= 0;
-    } 
-    else {
-      turnrate = myAngle - pose.pa;
-      if (std::abs(myAngle - pose.pa) < 0.0001)
-        speed = sqrt(diffX * diffX + diffY * diffY);
-      else
-        speed = 0;
-    }
+			if(bp[0] || bp[1]) {
+			  speed= 0;
+			  turnrate= 0;
+			} 
+			else {
+			  turnrate = myAngle - pose.pa;
+			  if (std::abs(myAngle - pose.pa) < 0.0001)
+				speed = sqrt(diffX * diffX + diffY * diffY);
+			  else
+				speed = 0;
+			}
 
-    std::cout << "Speed: " << speed << std::endl;
-    std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+			std::cout << "Speed: " << speed << std::endl;
+			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 
-    //std::cout << "i: " << i << std::endl;
-    //std::cout << "pose.px - plan[i]: " << std::abs(pose.px - plan[i]) << std::endl;
-    //std::cout << "pose.py - plan[i + 1]: " << std::abs(pose.py - plan[i + 1]) << std::endl << std::endl;
+			//std::cout << "i: " << i << std::endl;
+			//std::cout << "pose.px - plan[i]: " << std::abs(pose.px - plan[i]) << std::endl;
+			//std::cout << "pose.py - plan[i + 1]: " << std::abs(pose.py - plan[i + 1]) << std::endl << std::endl;
 
-    pp.SetSpeed(speed, turnrate);
-    counter++;
-  }
-  }
+			pp.SetSpeed(speed, turnrate);
+			counter++;
+		}
+	}
 } // end of main()
 
 /**
