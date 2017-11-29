@@ -29,16 +29,6 @@ void readPlan(double *, int);
 
 int main(int argc, char *argv[])
 {
-	int counter = 0;
-	double speed;            // How fast do we want the robot to go forwards?
-	double turnrate;         // How fast do we want the robot to turn?
-	   // For handling localization data
-	double diffAngle = 0, diffX = 0, diffY = 0;
-
-	//The set of coordinates that makes up the plan
-	int pLength;
-	double *plan;
-
 	//Set up proxies to connect the interface to the robot
 	player_pose2d_t pose;
 	PlayerClient robot("localhost");
@@ -47,18 +37,23 @@ int main(int argc, char *argv[])
 	LocalizeProxy lp (&robot, 0);
 	LaserProxy sp (&robot, 0);
 
-	// Allow the program to take charge of the motors (take care now)
-	pp.SetMotorEnable(true);
-
+	
 	/* A plan is an integer, n, followed by n doubles (n has to be even). 
 	 * The first and second doubles are the initial x and y (respectively) coordinates of the robot,
 	 * the third and fourth doubles give the first location that the robot should move to, and so on. 
 	 * The last pair of doubles give the point at which the robot should stop. */
-	pLength = readPlanLength(); // Find out how long the plan is from plan.txt
-	plan = new double[pLength]; // Create enough space to store the plan
+	int pLength = readPlanLength(); // Find out how long the plan is from plan.txt
+	double *plan = new double[pLength]; // Create enough space to store the plan
 	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
-
-	for (int i = 0; i < pLength; i = i + 2) {
+	
+	
+	int counter = 0;
+	double speed, turnrate, diffY, diffX, diffAngle;
+	pp.SetMotorEnable(true);
+	
+	
+	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
+		//navigate to waypoint
 		while (std::abs(pose.px - plan[i]) > 0.001 || std::abs(pose.py - plan[i + 1]) > 0.001) {
 			//update and print information from the robot
 			robot.Read();
