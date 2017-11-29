@@ -44,7 +44,12 @@ int main(int argc, char *argv[]) {
     }
 
 	if (pose.px < -4 && pose.py < -4) {	//check if localization succeeded
-		//print success message
+		//print success message to console
+		std::cout << "\nSuccess!\nI have successfully located my position.";
+		std::cout << "\nI am at (" << pose.px << "," << pose.py << ").";
+		std::cout << "\nI am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
+	
+		//print success message to log file
 		outfile << "\nSuccess!\nI have successfully located my position.";
 		outfile << "\nI am at (" << pose.px << "," << pose.py << ").";
 		outfile << "\nI am " << lp.GetHypoth(0).alpha*100 << " percent sure of my location." << std::endl;
@@ -81,9 +86,16 @@ int main(int argc, char *argv[]) {
 			outfile << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-		//print success message
+		//print success message to console
+		std::cout << "\nSuccess!\nI have successfully navigated my final position.";
+		std::cout << "\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
+		
+		//print success message to log file
 		outfile << "\nSuccess!\nI have successfully navigated my final position.";
 		outfile << "\nI am at (" << pose.px << "," << pose.py << ")." << std::endl;
+	}
+	else {
+		std::cout << "Localization has failed.\nPlease reset the player and run the program again." << std::endl;
 	}
 	outfile.close();
 	return 0;
