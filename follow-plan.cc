@@ -32,32 +32,28 @@ int main(int argc, char *argv[])
 	int counter = 0;
 	double speed;            // How fast do we want the robot to go forwards?
 	double turnrate;         // How fast do we want the robot to turn?
-	player_pose2d_t  pose;   // For handling localization data
+	   // For handling localization data
 	double diffAngle = 0, diffX = 0, diffY = 0;
 
 	//The set of coordinates that makes up the plan
 	int pLength;
 	double *plan;
 
-	// Set up proxies. These are the names we will use to connect to 
-	// the interface to the robot.
-	PlayerClient    robot("localhost");
-	BumperProxy     bp(&robot,0);
+	//Set up proxies to connect the interface to the robot
+	player_pose2d_t pose;
+	PlayerClient robot("localhost");
+	BumperProxy bp(&robot,0);
 	Position2dProxy pp(&robot,0);
-	LocalizeProxy   lp (&robot, 0);
-	LaserProxy      sp (&robot, 0);
+	LocalizeProxy lp (&robot, 0);
+	LaserProxy sp (&robot, 0);
 
 	// Allow the program to take charge of the motors (take care now)
 	pp.SetMotorEnable(true);
 
-	// Plan handling
-	//
-	// A plan is an integer, n, followed by n doubles (n has to be
-	// even). The first and second doubles are the initial x and y
-	// (respectively) coordinates of the robot, the third and fourth
-	// doubles give the first location that the robot should move to, and
-	// so on. The last pair of doubles give the point at which the robot
-	// should stop.
+	/* A plan is an integer, n, followed by n doubles (n has to be even). 
+	 * The first and second doubles are the initial x and y (respectively) coordinates of the robot,
+	 * the third and fourth doubles give the first location that the robot should move to, and so on. 
+	 * The last pair of doubles give the point at which the robot should stop. */
 	pLength = readPlanLength(); // Find out how long the plan is from plan.txt
 	plan = new double[pLength]; // Create enough space to store the plan
 	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
