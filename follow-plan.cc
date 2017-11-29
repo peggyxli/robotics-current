@@ -104,10 +104,12 @@ int main(int argc, char *argv[])
 } // end of main()
 
 
-/* Function provided by sample code
+/**
+ * readPosition
+ * Function provided by sample code
  * Read the position of the robot from the localization proxy. 
  * The localization proxy gives us a hypothesis, and from that we extract the mean, which is a pose. 
- */
+ **/
 player_pose2d_t readPosition(LocalizeProxy& lp) {
 	player_pose2d_t pose;
 	uint32_t hCount = lp.GetHypothCount();
@@ -118,9 +120,11 @@ player_pose2d_t readPosition(LocalizeProxy& lp) {
 }
 
 
-/* Function provided by sample code
+/**
+ * printRobotData
+ * Function provided by sample code
  * Print bumpers and location
- */
+ **/
 void printRobotData(BumperProxy& bp, player_pose2d_t pose){
 	// Print out what the bumpers tell us
 	std::cout << "Left  bumper: " << bp[0] << std::endl;
@@ -132,14 +136,12 @@ void printRobotData(BumperProxy& bp, player_pose2d_t pose){
 	std::cout << "A: " << pose.pa << std::endl;
 }
 
+
 /**
  * readPlanLength
- *
- * Open the file plan.txt and read the first element, which should be
- * an even integer, and return it.
- *
+ * Function provided by sample code
+ * Open the file plan.txt and read the first element, which should be an even integer, and return it.
  **/
-
 int readPlanLength(void)
 {
   int length;
@@ -160,14 +162,12 @@ int readPlanLength(void)
 
 } // End of readPlanLength
 
+
 /**
  * readPlan
- *
- * Given the number of coordinates, read them in from plan.txt and put
- * them in the array plan.
- *
+ * Function provided by sample code
+ * Given the number of coordinates, read them in from plan.txt and put them in the array plan.
  **/
-
 void readPlan(double *plan, int length)
 {
   int skip;
@@ -184,14 +184,13 @@ void readPlan(double *plan, int length)
 
 } // End of readPlan
 
+
 /**
  * printPlan
- *
- * Print the plan on the screen, two coordinates to a line, x then y
- * with a header to remind us which is which.
- *
+ * Function provided by sample code
+ * Print the plan on the screen, two coordinates to a line,
+ * x then y with a header to remind us which is which.
  **/
-
 void printPlan(double *plan , int length)
 {
   std::cout << std::endl;
