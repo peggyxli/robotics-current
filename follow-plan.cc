@@ -1,6 +1,6 @@
 /**
  * follow-plan.cc
- * 
+ *
  * Sample code for a robot that has two front bumpers and a laser, and
  * which is provided with localization data.
  *
@@ -9,14 +9,14 @@
  *
  * Written by: Simon Parsons
  * Date:       10th November 2011
- *  
+ *
  **/
 
 
 #include <iostream>
 #include <fstream>
 #include <libplayerc++/playerc++.h>
-using namespace PlayerCc;  
+using namespace PlayerCc;
 
 
 /**
@@ -30,7 +30,7 @@ void printLaserData(LaserProxy& sp);
 
 int  readPlanLength(void);
 void readPlan(double *, int);
-void printPlan(double *,int);  
+void printPlan(double *,int);
 void writePlan(double *, int);
 
 /**
@@ -39,13 +39,14 @@ void writePlan(double *, int);
  **/
 
 int main(int argc, char *argv[])
-{  
+{
 
   // Variables
   int counter = 0;
   double speed;            // How fast do we want the robot to go forwards?
   double turnrate;         // How fast do we want the robot to turn?
   player_pose2d_t  pose;   // For handling localization data
+  double myAngle = 0, diffX = 0, diffY = 0;
 
   // The set of coordinates that makes up the plan
 
@@ -54,17 +55,17 @@ int main(int argc, char *argv[])
 
   // Set up proxies. These are the names we will use to connect to 
   // the interface to the robot.
-  PlayerClient    robot("localhost");  
-  BumperProxy     bp(&robot,0);  
+  PlayerClient    robot("localhost");
+  BumperProxy     bp(&robot,0);
   Position2dProxy pp(&robot,0);
   LocalizeProxy   lp (&robot, 0);
   LaserProxy      sp (&robot, 0);
-  
+
   // Allow the program to take charge of the motors (take care now)
   pp.SetMotorEnable(true);
 
   // Plan handling
-  // 
+  //
   // A plan is an integer, n, followed by n doubles (n has to be
   // even). The first and second doubles are the initial x and y
   // (respectively) coordinates of the robot, the third and fourth
@@ -79,8 +80,8 @@ int main(int argc, char *argv[])
 
 
   // Main control loop
-  while(true) 
-    {    
+/*  while(true)
+    {
       // Update information from the robot.
       robot.Read();
       // Read new information about position
@@ -92,40 +93,77 @@ int main(int argc, char *argv[])
       if(counter > 2){
 	printLaserData(sp);
       }
-
       // Print data on the robot to the terminal --- turned off for now.
       // printRobotData(bp, pose);
-      
       // If either bumper is pressed, stop. Otherwise just go forwards
-
       if(bp[0] || bp[1]){
 	speed= 0;
 	turnrate= 0;
-      } 
+      }
       else {
 	speed=.1;
         turnrate = 0;
-      }     
-
+      }
       // What are we doing?
-      std::cout << "Speed: " << speed << std::endl;      
+      std::cout << "Speed: " << speed << std::endl;
       std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-
       // Send the commands to the robot
-      pp.SetSpeed(speed, turnrate);  
+      pp.SetSpeed(speed, turnrate);
       // Count how many times we do this
       counter++;
+    }*/
+
+  for (int i = 0; i < pLength; i = i + 2)
+  {
+  while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01)
+  {
+    robot.Read();				// Update information from the robot.
+    pose = readPosition(lp);	// Read new information about position
+    printRobotData(bp, pose);	// Print data on the robot to the terminal
+
+    // Print information about the laser. Check the counter first to stop
+    // problems on startup
+    if(counter > 2){
+      printLaserData(sp);
     }
-  
+
+    diffY = plan[i + 1] - pose.py;
+    diffX = plan[i] - pose.px;
+    myAngle = atan2(diffY, diffX);
+    std::cout << "My angle: " << myAngle << std::endl;
+
+    if(bp[0] || bp[1]) {
+      speed= 0;
+      turnrate= 0;
+    } 
+    else {
+      turnrate = myAngle - pose.pa;
+      if (std::abs(myAngle - pose.pa) < 0.0001)
+        speed = sqrt(diffX * diffX + diffY * diffY);
+      else
+        speed = 0;
+    }
+
+    std::cout << "Speed: " << speed << std::endl;
+    std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+
+    //std::cout << "i: " << i << std::endl;
+    //std::cout << "pose.px - plan[i]: " << std::abs(pose.px - plan[i]) << std::endl;
+    //std::cout << "pose.py - plan[i + 1]: " << std::abs(pose.py - plan[i + 1]) << std::endl << std::endl;
+
+    pp.SetSpeed(speed, turnrate);
+    counter++;
+  }
+  }
 } // end of main()
 
 /**
  * readPosition()
  *
- * Read the position of the robot from the localization proxy. 
+ * Read the position of the robot from the localization proxy.
  *
  * The localization proxy gives us a hypothesis, and from that we extract
- * the mean, which is a pose. 
+ * the mean, which is a pose.
  *
  **/
 
