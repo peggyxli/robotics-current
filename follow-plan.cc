@@ -26,7 +26,6 @@ void printLaserData(LaserProxy& sp);
 
 int  readPlanLength(void);
 void readPlan(double *, int);
-void printPlan(double *,int);
 
 
 int main(int argc, char *argv[])
@@ -63,7 +62,6 @@ int main(int argc, char *argv[])
 	pLength = readPlanLength(); // Find out how long the plan is from plan.txt
 	plan = new double[pLength]; // Create enough space to store the plan
 	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
-	printPlan(plan,pLength);    // Print the plan on the screen
 
 	for (int i = 0; i < pLength; i = i + 2) {
 		while (std::abs(pose.px - plan[i]) > 0.001 || std::abs(pose.py - plan[i + 1]) > 0.001) {
@@ -183,25 +181,3 @@ void readPlan(double *plan, int length)
   planFile.close();
 
 } // End of readPlan
-
-
-/**
- * printPlan
- * Function provided by sample code
- * Print the plan on the screen, two coordinates to a line,
- * x then y with a header to remind us which is which.
- **/
-void printPlan(double *plan , int length)
-{
-  std::cout << std::endl;
-  std::cout << "   x     y" << std::endl;
-  for(int i = 0; i < length; i++){
-    std::cout.width(5);
-    std::cout << plan[i] << " ";
-    if((i > 0) && ((i % 2) != 0)){
-      std::cout << std::endl;
-    }
-  }
-  std::cout << std::endl;
-
-} // End of printPlan
