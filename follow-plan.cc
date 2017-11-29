@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	double speed;            // How fast do we want the robot to go forwards?
 	double turnrate;         // How fast do we want the robot to turn?
 	player_pose2d_t  pose;   // For handling localization data
-	double myAngle = 0, diffX = 0, diffY = 0;
+	double diffAngle = 0, diffX = 0, diffY = 0;
 
 	//The set of coordinates that makes up the plan
 	int pLength;
@@ -68,43 +68,40 @@ int main(int argc, char *argv[])
 	writePlan(plan, pLength);   // Write the plan to the file plan-out.txt
 
 	for (int i = 0; i < pLength; i = i + 2) {
-		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
-			robot.Read();				// Update information from the robot.
-			pose = readPosition(lp);	// Read new information about position
-			printRobotData(bp, pose);	// Print data on the robot to the terminal
-
-			// Print information about the laser. Check the counter first to stop
-			// problems on startup
-			if(counter > 2){
+		while (std::abs(pose.px - plan[i]) > 0.001 || std::abs(pose.py - plan[i + 1]) > 0.001) {
+			//update and print information from the robot
+			robot.Read();
+			pose = readPosition(lp);
+			printRobotData(bp, pose);
+			
+			if (counter++ > 2) {
 				printLaserData(sp);
+				if (sp.MinLeft() < .5) { //obstacle avoidance
+					turnrate = sp.MinLeft() - 2;
+					speed = sp.MinLeft()/2;
+				}
+				else if (sp.MinRight() < .5) {	//obstacle avoidance
+					turnrate = 2 - sp.MinRight();
+					speed = sp.MinRight()/2;
+				}
+				else {	//locate and move towards position
+					//calculate angle needed to move to end position
+					diffY = plan[i + 1] - pose.py;
+					diffX = plan[i] - pose.px;
+					diffAngle = atan2(diffY, diffX) - pose.pa;
+					
+					turnrate = diffAngle;	//set turnrate
+					if (std::abs(diffAngle) < 0.001)	//move to position
+						speed = sqrt(diffY*diffY+diffX*diffX);
+					else speed = 0;	//stay in place and find angle
+					
+					std::cout << "We are going to\n:" << plan[i] << ", " << plan[i+1] << std::endl;
+				}
 			}
-
-			diffY = plan[i + 1] - pose.py;
-			diffX = plan[i] - pose.px;
-			myAngle = atan2(diffY, diffX);
-			std::cout << "My angle: " << myAngle << std::endl;
-
-			if(bp[0] || bp[1]) {
-				speed= 0;
-				turnrate= 0;
-			} 
-			else {
-				turnrate = myAngle - pose.pa;
-				if (std::abs(myAngle - pose.pa) < 0.0001)
-					speed = sqrt(diffX * diffX + diffY * diffY);
-				else
-					speed = 0;
-			}
-
-			std::cout << "Speed: " << speed << std::endl;
+			//print info
+			std::cout << "Speed: " << speed << std::endl;      
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-
-			//std::cout << "i: " << i << std::endl;
-			//std::cout << "pose.px - plan[i]: " << std::abs(pose.px - plan[i]) << std::endl;
-			//std::cout << "pose.py - plan[i + 1]: " << std::abs(pose.py - plan[i + 1]) << std::endl << std::endl;
-
 			pp.SetSpeed(speed, turnrate);
-			counter++;
 		}
 	}
 } // end of main()
