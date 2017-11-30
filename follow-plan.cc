@@ -57,12 +57,16 @@ int main(int argc, char *argv[])
 			
 			if (sp.MinLeft() < .5) { //obstacle avoidance
 				turnrate = sp.MinLeft() - 2;
-				speed = sp.MinLeft()/2;
+				if (bp[0])
+					speed = -sp.MinLeft()/2;
+				else speed = sp.MinLeft()/2;
 				std::cout << "Obstacle avoidance in progress." << std::endl;
 			}
 			else if (sp.MinRight() < .5) {	//obstacle avoidance
 				turnrate = 2 - sp.MinRight();
-				speed = sp.MinRight()/2;
+				if (bp[1])
+					speed = -sp.MinRight()/2;
+				else speed = sp.MinRight()/2;
 				std::cout << "Obstacle avoidance in progress." << std::endl;
 			}
 			else {	//locate and move towards position
