@@ -40,9 +40,11 @@ int main(int argc, char *argv[])
 	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
 	
 	
-	int counter = 0;
-	double speed, turnrate, diffY, diffX, diffAngle;
 	pp.SetMotorEnable(true);
+	std::cout << "Booting up laser." << std::endl;
+	for (int i = 0; i < 3; i++) 
+		robot.Read();	//to avoid seg fault while booting up
+	double speed, turnrate, diffY, diffX, diffAngle;
 	
 	
 	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
@@ -53,30 +55,28 @@ int main(int argc, char *argv[])
 			pose = readPosition(lp);
 			printRobotData(bp, pose);
 			
-			if (counter++ > 2) {
-				if (sp.MinLeft() < .5) { //obstacle avoidance
-					turnrate = sp.MinLeft() - 2;
-					speed = sp.MinLeft()/2;
-					std::cout << "Obstacle avoidance in progress." << std::endl;
-				}
-				else if (sp.MinRight() < .5) {	//obstacle avoidance
-					turnrate = 2 - sp.MinRight();
-					speed = sp.MinRight()/2;
-					std::cout << "Obstacle avoidance in progress." << std::endl;
-				}
-				else {	//locate and move towards position
-					//calculate angle needed to move to end position
-					diffY = plan[i + 1] - pose.py;
-					diffX = plan[i] - pose.px;
-					diffAngle = atan2(diffY, diffX) - pose.pa;
-					
-					turnrate = diffAngle;	//set turnrate
-					if (std::abs(diffAngle) < 0.001)	//move to position
-						speed = sqrt(diffY*diffY+diffX*diffX);
-					else speed = 0;	//stay in place and find angle
-					
-					std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
-				}
+			if (sp.MinLeft() < .5) { //obstacle avoidance
+				turnrate = sp.MinLeft() - 2;
+				speed = sp.MinLeft()/2;
+				std::cout << "Obstacle avoidance in progress." << std::endl;
+			}
+			else if (sp.MinRight() < .5) {	//obstacle avoidance
+				turnrate = 2 - sp.MinRight();
+				speed = sp.MinRight()/2;
+				std::cout << "Obstacle avoidance in progress." << std::endl;
+			}
+			else {	//locate and move towards position
+				//calculate angle needed to move to end position
+				diffY = plan[i + 1] - pose.py;
+				diffX = plan[i] - pose.px;
+				diffAngle = atan2(diffY, diffX) - pose.pa;
+				
+				turnrate = diffAngle;	//set turnrate
+				if (std::abs(diffAngle) < 0.001)	//move to position
+					speed = sqrt(diffY*diffY+diffX*diffX);
+				else speed = 0;	//stay in place and find angle
+				
+				std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
 			}
 			//print info
 			std::cout << "Speed: " << speed << std::endl;      
