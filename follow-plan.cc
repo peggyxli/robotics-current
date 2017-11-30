@@ -1,15 +1,8 @@
 /**
- * follow-plan.cc
- *
- * Sample code for a robot that has two front bumpers and a laser, and
- * which is provided with localization data.
- *
- * The code also allows the controller to read and write a "plan", a sequence
- * of location that the robot should move to.
- *
- * Written by: Simon Parsons
- * Date:       10th November 2011
- *
+ * Robotics class project #5
+ * Modified version of follow-plan.cc, originally written by Simon Parsons
+ * Used to navigate a Roomba/Create to a set of specified locations and avoid obstacles along the way.
+ * Group 5: Randolph Cisneros, Arsenii Lyzenko, Peggy Li
  **/
 
 
