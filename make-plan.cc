@@ -37,17 +37,15 @@ void printRobotData(BumperProxy& bp, player_pose2d_t pose);
 void printLaserData(LaserProxy& sp);
 
 void readMap(int[SIZE][SIZE]);
-void writeMap(int [SIZE][SIZE]);
-void printMap(int [SIZE][SIZE]);
+void printMap(int[SIZE][SIZE]);
+void writeMap(int[SIZE][SIZE]);
+void dialateMap(int[SIZE][SIZE]);
+
 int  readPlanLength(void);
 void readPlan(double *, int);
 void printPlan(double *,int);  
 void writePlan(double *, int);
 
-/**
- * main()
- *
- **/
 
 int main(int argc, char *argv[])
 {  
@@ -79,15 +77,19 @@ int main(int argc, char *argv[])
   pp.SetMotorEnable(true);
 
   // Map handling
-  //
   // The occupancy grid is a square array of integers, each side of
   // which is SIZE elements, in which each element is either 1 or 0. A
   // 1 indicates the square is occupied, an 0 indicates that it is
   // free space.
   readMap(oGrid);   // Read a map in from the file map.txt
   printMap(oGrid);  // Print the map on the screen
-  writeMap(oGrid);  // Write a map out to the file map-out.txt
+  //writeMap(oGrid);  // Write a map out to the file map-out.txt
+  
+  dialateMap(oGrid);
+  printMap(oGrid);
 
+  
+/*
   // Plan handling
   // 
   // A plan is an integer, n, followed by n doubles (n has to be
@@ -140,7 +142,7 @@ int main(int argc, char *argv[])
       pp.SetSpeed(speed, turnrate);  
       // Count how many times we do this
       counter++;
-    }
+    } */
   
 } // end of main()
 
@@ -158,18 +160,15 @@ int main(int argc, char *argv[])
 
 void readMap(int map[SIZE][SIZE])
 {
-  std::ifstream mapFile;
-  mapFile.open("map.txt");
+	std::ifstream mapFile;
+	mapFile.open("map.txt");
 
-  for(int i = SIZE - 1; i >= 0; i--){
-    for(int j = 0; j < SIZE; j++)
-      {
-	mapFile >> map[i][j];
-      }
-  }
+	for(int i = SIZE - 1; i >= 0; i--) {
+		for(int j = 0; j < SIZE; j++)
+			mapFile >> map[i][j];
+	}
 
   mapFile.close();
-
 } // End of readMap()
 
 /**
@@ -181,16 +180,13 @@ void readMap(int map[SIZE][SIZE])
  *
  **/
 
-void printMap(int map[SIZE][SIZE])
-{
-  for(int i = SIZE -1; i >= 0; i--){
-    for(int j = 0; j < SIZE; j++)
-      {
-	std::cout << map[i][j] << " ";
-      }
-    std::cout << std::endl;
-  }
-
+void printMap(int map[SIZE][SIZE]) {
+	for(int i = SIZE - 1; i >= 0; i--) {
+		for(int j = 0; j < SIZE; j++)
+			std::cout << map[i][j] << " ";
+		std::cout << std::endl;
+	}
+	std::cout << std::endl << std::endl;
 } // End of printMap()
 
 /**
@@ -216,6 +212,25 @@ void writeMap(int map[SIZE][SIZE])
   }
 
   mapFile.close();
+}
+
+void dialateMap(int map[SIZE][SIZE]) {
+	for(int i = SIZE-1; i >= 0; i--) {
+		for(int j = 0; j < SIZE; j++) {
+			if (i > 0) {
+				if (map[i][j] == 0 && map[i-1][j] == 1)
+					map[i][j] = 2;
+				else if (map[i][j] == 1 && map[i-1][j] == 0)
+					map[i-1][j] = 2;
+			}
+			if (j < SIZE-1) {
+				if (map[i][j] == 0 && map[i][j+1] == 1)
+					map[i][j] = 2;
+				else if (map[i][j] == 1 && map[i][j+1] == 0)
+					map[i][j+1] = 2;
+			}
+		}
+	}
 }
 
 /**
