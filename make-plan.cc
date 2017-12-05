@@ -38,7 +38,7 @@ void findWaypoints(std::vector <int>&, int[SIZE][SIZE]);
 int  readPlanLength(void);
 void readPlan(double *, int);
 void printPlan(double *,int);  
-void writePlan(double *, int);
+void writePlan(std::vector<int>);
 
 
 int main(int argc, char *argv[])
@@ -88,6 +88,11 @@ int main(int argc, char *argv[])
   findWaypoints(myNodes, oGrid);
   printMap(oGrid);
   
+  writePlan(myNodes);   // Write the plan to the file plan-out.txt
+  pLength = readPlanLength(); // Find out how long the plan is from plan.txt
+  plan = new double[pLength]; // Create enough space to store the plan
+  readPlan(plan, pLength);    // Read the plan from the file plan.txt.
+  printPlan(plan,pLength);    // Print the plan on the screen
 /*
   // Plan handling
   // 
@@ -396,7 +401,7 @@ int readPlanLength(void)
   int length;
 
   std::ifstream planFile;
-  planFile.open("plan.txt");
+  planFile.open("plan-out.txt");
 
   planFile >> length;
   planFile.close();
@@ -424,7 +429,7 @@ void readPlan(double *plan, int length)
   int skip;
 
   std::ifstream planFile;
-  planFile.open("plan.txt");
+  planFile.open("plan-out.txt");
 
   planFile >> skip;
   for(int i = 0; i < length; i++){
@@ -467,14 +472,14 @@ void printPlan(double *plan , int length)
  *
  **/
 
-void writePlan(double *plan , int length)
+void writePlan(std::vector<int> myNodes)
 {
   std::ofstream planFile;
   planFile.open("plan-out.txt");
 
-  planFile << length << " ";
-  for(int i = 0; i < length; i++){
-    planFile << plan[i] << " ";
+  planFile << (myNodes.size()-1)*2 << " ";
+  for(int i = 1; i < myNodes.size(); i++){
+    planFile << double(myNodes[i]/100)/2-8 << " " << double(myNodes[i]%100)/2-8 << " ";
   }
 
   planFile.close();
