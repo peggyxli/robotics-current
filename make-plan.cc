@@ -33,6 +33,7 @@ void printMap(int[SIZE][SIZE]);
 void writeMap(int[SIZE][SIZE]);
 void dialateMap(int[SIZE][SIZE]);
 std::vector<int> findPath(double, double, double, double, int[SIZE][SIZE]);
+void findWaypoints(std::vector <int>&, int[SIZE][SIZE]);
 
 int  readPlanLength(void);
 void readPlan(double *, int);
@@ -81,9 +82,11 @@ int main(int argc, char *argv[])
   dialateMap(oGrid);
   printMap(oGrid);
   
-  findPath(-6,-6,6.5,6.5,oGrid);
+  std::vector<int> myNodes = findPath(-6,-6,6.5,6.5,oGrid);
   printMap(oGrid);
 
+  findWaypoints(myNodes, oGrid);
+  printMap(oGrid);
   
 /*
   // Plan handling
@@ -262,8 +265,40 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 		closedNodes.push_back(nodeX*100+nodeY);
 		minCost = 9999;
 	}
+	for (int i = 0; i < closedNodes.size(); i++)
+		std::cout << closedNodes[i] << std::endl;
 	return closedNodes;
 }
+
+
+void findWaypoints (std::vector<int>& myNodes, int map[SIZE][SIZE]) {
+	int lastWaypoint = 0, i = 1;
+	
+	while (i < myNodes.size()-1) {
+		std::cout << "\n" << myNodes[i] << " " << i << " " 
+				  << myNodes[i-1]/100-myNodes[i]/100 << " " << myNodes[i]/100-myNodes[i+1]/100 << " "
+				  << myNodes[i-1]%100-myNodes[i]%100 << " " << myNodes[i]%100-myNodes[i+1]%100 << " ";
+		if ((myNodes[i-1]/100-myNodes[i]/100 == myNodes[i]/100-myNodes[i+1]/100) &&
+			(myNodes[i-1]%100-myNodes[i]%100 == myNodes[i]%100-myNodes[i+1]%100)) {
+			std::cout << "Delete";
+			i++;
+		}
+		else {
+			if (i-lastWaypoint > 0) {
+				std::cout << myNodes[lastWaypoint+1] << " " << myNodes[i-1];
+				myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.begin()+i);
+			}
+			lastWaypoint++;
+			i = lastWaypoint+1;
+		}	
+	}
+	myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.end()-1);
+	std::cout << std::endl << std::endl;
+	for (i = 0; i < myNodes.size(); i++) {
+		map[myNodes[i]/100][myNodes[i]%100] = 4;
+	}
+}
+
 
 
 /**
