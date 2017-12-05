@@ -72,16 +72,19 @@ int main(int argc, char *argv[])
   // free space.
   readMap(oGrid);   // Read a map in from the file map.txt
   printMap(oGrid);  // Print the map on the screen
-  //writeMap(oGrid);  // Write a map out to the file map-out.txt
+  writeMap(oGrid);  // Write a map out to the file map-out.txt
   
   dialateMap(oGrid);
   printMap(oGrid);
+  writeMap(oGrid);
   
   std::vector<int> myNodes = findPath(-6,-6,6.5,6.5,oGrid);
   printMap(oGrid);
-
+	writeMap(oGrid);
+  
   findWaypoints(myNodes, oGrid);
   printMap(oGrid);
+  writeMap(oGrid);
   writePlan(myNodes);   // Write the plan to the file plan-out.txt
   
   
@@ -90,7 +93,6 @@ int main(int argc, char *argv[])
   readPlan(plan, pLength);    // Read the plan from the file plan.txt.
   printPlan(plan,pLength);    // Print the plan on the screen
 	
-	pp.SetMotorEnable(true);
 	std::cout << "Booting up laser." << std::endl;
 	for (int i = 0; i < 3; i++) 
 		robot.Read();	//to avoid seg fault while booting up
