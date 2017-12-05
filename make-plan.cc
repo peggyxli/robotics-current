@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 	double speed, turnrate, diffY, diffX, diffAngle;
 	
 	
-	/*for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
+	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
 		//navigate to waypoint
 		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
 			//update and print information from the robot
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-	}*/
+	}
 } // end of main()
 
 /**
