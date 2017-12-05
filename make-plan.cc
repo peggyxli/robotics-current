@@ -16,21 +16,13 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include <libplayerc++/playerc++.h>
 using namespace PlayerCc;  
 
-/**
- * Global constants
- *
- **/
 
 const int SIZE = 32; // The number of squares per side of the occupancy grid
                      // (which we assume to be square)
-
-/**
- * Function headers
- *
- **/
 
 player_pose2d_t readPosition(LocalizeProxy& lp);
 void printRobotData(BumperProxy& bp, player_pose2d_t pose);
@@ -40,6 +32,7 @@ void readMap(int[SIZE][SIZE]);
 void printMap(int[SIZE][SIZE]);
 void writeMap(int[SIZE][SIZE]);
 void dialateMap(int[SIZE][SIZE]);
+std::vector<int> findPath(double, double, double, double, int[SIZE][SIZE]);
 
 int  readPlanLength(void);
 void readPlan(double *, int);
@@ -86,6 +79,9 @@ int main(int argc, char *argv[])
   //writeMap(oGrid);  // Write a map out to the file map-out.txt
   
   dialateMap(oGrid);
+  printMap(oGrid);
+  
+  findPath(-6,-6,6.5,6.5,oGrid);
   printMap(oGrid);
 
   
@@ -214,6 +210,8 @@ void writeMap(int map[SIZE][SIZE])
   mapFile.close();
 }
 
+
+
 void dialateMap(int map[SIZE][SIZE]) {
 	for(int i = SIZE-1; i >= 0; i--) {
 		for(int j = 0; j < SIZE; j++) {
@@ -232,6 +230,41 @@ void dialateMap(int map[SIZE][SIZE]) {
 		}
 	}
 }
+
+
+std::vector<int> findPath(double startX, double startY, double endX, double endY, int map[SIZE][SIZE]) {
+	int nodeX = startX*2+16;
+	int nodeY = startY*2+16;
+	std::vector<int> closedNodes(1, nodeX*100+nodeY);
+	
+	endX = endX*2+16;
+	endY = endY*2+16;
+	
+	int minX, minY, minCost = 999, nodeCost = 0;
+	map[nodeX][nodeY] = 3;
+	
+	while (nodeX != endX || nodeY != endY) {
+		for (int i = nodeX+1; i > nodeX-2; i--) {
+			for (int j = nodeY-1; j < nodeY+2; j++) {
+				if (map[i][j] == 0) {
+					nodeCost = 1 + std::abs(endX-i) + std::abs(endY-j);
+					if (nodeCost < minCost) {
+						minCost = nodeCost;
+						minX = i;
+						minY = j;
+					}
+				}
+			}
+		}
+		nodeX = minX;
+		nodeY = minY;
+		map[nodeX][nodeY] = 3;
+		closedNodes.push_back(nodeX*100+nodeY);
+		minCost = 9999;
+	}
+	return closedNodes;
+}
+
 
 /**
  * readPosition()
