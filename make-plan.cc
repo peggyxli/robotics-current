@@ -43,11 +43,6 @@ void writePlan(std::vector<int>);
 
 int main(int argc, char *argv[])
 {  
-
-  // Variables
-  int counter = 0;
-  double speed;            // How fast do we want the robot to go forwards?
-  double turnrate;         // How fast do we want the robot to turn?
   player_pose2d_t  pose;   // For handling localization data
 
   // The occupancy grid
@@ -87,67 +82,62 @@ int main(int argc, char *argv[])
 
   findWaypoints(myNodes, oGrid);
   printMap(oGrid);
-  
   writePlan(myNodes);   // Write the plan to the file plan-out.txt
-  pLength = readPlanLength(); // Find out how long the plan is from plan.txt
-  plan = new double[pLength]; // Create enough space to store the plan
-  readPlan(plan, pLength);    // Read the plan from the file plan.txt.
-  printPlan(plan,pLength);    // Print the plan on the screen
-/*
-  // Plan handling
-  // 
-  // A plan is an integer, n, followed by n doubles (n has to be
-  // even). The first and second doubles are the initial x and y
-  // (respectively) coordinates of the robot, the third and fourth
-  // doubles give the first location that the robot should move to, and
-  // so on. The last pair of doubles give the point at which the robot
-  // should stop.
-  pLength = readPlanLength(); // Find out how long the plan is from plan.txt
-  plan = new double[pLength]; // Create enough space to store the plan
-  readPlan(plan, pLength);    // Read the plan from the file plan.txt.
-  printPlan(plan,pLength);    // Print the plan on the screen
-  writePlan(plan, pLength);   // Write the plan to the file plan-out.txt
-
-
-  // Main control loop
-  while(true) 
-    {    
-      // Update information from the robot.
-      robot.Read();
-      // Read new information about position
-      pose = readPosition(lp);
-      // Print data on the robot to the terminal
-      printRobotData(bp, pose);
-      // Print information about the laser. Check the counter first to stop
-      // problems on startup
-      if(counter > 2){
-	printLaserData(sp);
-      }
-
-      // Print data on the robot to the terminal --- turned off for now.
-      // printRobotData(bp, pose);
-      
-      // If either bumper is pressed, stop. Otherwise just go forwards
-
-      if(bp[0] || bp[1]){
-	speed= 0;
-	turnrate= 0;
-      } 
-      else {
-	speed=.1;
-        turnrate = 0;
-      }     
-
-      // What are we doing?
-      std::cout << "Speed: " << speed << std::endl;      
-      std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
-
-      // Send the commands to the robot
-      pp.SetSpeed(speed, turnrate);  
-      // Count how many times we do this
-      counter++;
-    } */
   
+  
+  pLength = readPlanLength(); // Find out how long the plan is from plan.txt
+  plan = new double[pLength]; // Create enough space to store the plan
+  readPlan(plan, pLength);    // Read the plan from the file plan.txt.
+  printPlan(plan,pLength);    // Print the plan on the screen
+	
+	pp.SetMotorEnable(true);
+	std::cout << "Booting up laser." << std::endl;
+	for (int i = 0; i < 3; i++) 
+		robot.Read();	//to avoid seg fault while booting up
+	double speed, turnrate, diffY, diffX, diffAngle;
+	
+	
+	/*for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
+		//navigate to waypoint
+		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
+			//update and print information from the robot
+			robot.Read();
+			pose = readPosition(lp);
+			printRobotData(bp, pose);
+			
+			if (sp.MinLeft() < .5) { //obstacle avoidance
+				turnrate = sp.MinLeft() - 2;
+				if (bp[0] || bp[1])
+					speed = -sp.MinLeft();
+				else speed = sp.MinLeft()/2;
+				std::cout << "Obstacle avoidance in progress." << std::endl;
+			}
+			else if (sp.MinRight() < .5) {	//obstacle avoidance
+				turnrate = 2 - sp.MinRight();
+				if (bp[0] || bp[1])
+					speed = -sp.MinRight();
+				else speed = sp.MinRight()/2;
+				std::cout << "Obstacle avoidance in progress." << std::endl;
+			}
+			else {	//locate and move towards position
+				//calculate angle needed to move to end position
+				diffY = plan[i + 1] - pose.py;
+				diffX = plan[i] - pose.px;
+				diffAngle = atan2(diffY, diffX) - pose.pa;
+				
+				turnrate = diffAngle;	//set turnrate
+				if (std::abs(diffAngle) < 0.001)	//move to position
+					speed = sqrt(diffY*diffY+diffX*diffX)/2;
+				else speed = 0;	//stay in place and find angle
+				
+				std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
+			}
+			//print info
+			std::cout << "Speed: " << speed << std::endl;      
+			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+			pp.SetSpeed(speed, turnrate);
+		}
+	}*/
 } // end of main()
 
 /**
@@ -243,7 +233,7 @@ void dialateMap(int map[SIZE][SIZE]) {
 std::vector<int> findPath(double startX, double startY, double endX, double endY, int map[SIZE][SIZE]) {
 	int nodeX = startX*2+16;
 	int nodeY = startY*2+16;
-	std::vector<int> closedNodes(1, nodeX*100+nodeY);
+	std::vector<int> closedNodes(1, nodeY*100+nodeX);
 	
 	endX = endX*2+16;
 	endY = endY*2+16;
@@ -252,22 +242,22 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 	map[nodeX][nodeY] = 3;
 	
 	while (nodeX != endX || nodeY != endY) {
-		for (int i = nodeX+1; i > nodeX-2; i--) {
-			for (int j = nodeY-1; j < nodeY+2; j++) {
+		for (int i = nodeY+1; i > nodeY-2; i--) {
+			for (int j = nodeX-1; j < nodeX+2; j++) {
 				if (map[i][j] == 0) {
-					nodeCost = 1 + std::abs(endX-i) + std::abs(endY-j);
+					nodeCost = 1 + std::abs(endY-i) + std::abs(endX-j);
 					if (nodeCost < minCost) {
 						minCost = nodeCost;
-						minX = i;
-						minY = j;
+						minY = i;
+						minX = j;
 					}
 				}
 			}
 		}
-		nodeX = minX;
 		nodeY = minY;
-		map[nodeX][nodeY] = 3;
-		closedNodes.push_back(nodeX*100+nodeY);
+		nodeX = minX;
+		map[nodeY][nodeX] = 3;
+		closedNodes.push_back(nodeY*100+nodeX);
 		minCost = 9999;
 	}
 	for (int i = 0; i < closedNodes.size(); i++)
@@ -479,7 +469,8 @@ void writePlan(std::vector<int> myNodes)
 
   planFile << (myNodes.size()-1)*2 << " ";
   for(int i = 1; i < myNodes.size(); i++){
-    planFile << double(myNodes[i]/100)/2-8 << " " << double(myNodes[i]%100)/2-8 << " ";
+	  std::cout << double(myNodes[i]%100)/2-8 << " " << double(myNodes[i]/100)/2-8 << " ";
+    planFile << double(myNodes[i]%100)/2-8 << " " << double(myNodes[i]/100)/2-8 << " ";
   }
 
   planFile.close();
