@@ -41,57 +41,36 @@ void printPlan(double *,int);
 void writePlan(std::vector<int>);
 
 
-int main(int argc, char *argv[])
-{  
-  player_pose2d_t  pose;   // For handling localization data
+int main(int argc, char *argv[]) {
+	//Set up proxies to connect the interface to the robot
+	player_pose2d_t pose;   // For handling localization data
+	PlayerClient robot("localhost");  
+	BumperProxy bp(&robot, 0);  
+	Position2dProxy pp(&robot, 0);
+	LocalizeProxy lp (&robot, 0);
+	LaserProxy sp (&robot, 0);
+	pp.SetMotorEnable(true);
+	
+	int oGrid[SIZE][SIZE];	//the occupancy grid
+	int pLength;
+	double *plan;	
 
-  // The occupancy grid
-
-  int oGrid[SIZE][SIZE];
-
-  // The set of coordinates that makes up the plan
-
-  int pLength;
-  double *plan;
-
-  // Set up proxies. These are the names we will use to connect to 
-  // the interface to the robot.
-  PlayerClient    robot("localhost");  
-  BumperProxy     bp(&robot,0);  
-  Position2dProxy pp(&robot,0);
-  LocalizeProxy   lp (&robot, 0);
-  LaserProxy      sp (&robot, 0);
+	readMap(oGrid);   // Read a map in from the file map.txt
+	printMap(oGrid);  // Print the map on the screen
+	dialateMap(oGrid);
+	printMap(oGrid);
   
-  // Allow the program to take charge of the motors (take care now)
-  pp.SetMotorEnable(true);
-
-  // Map handling
-  // The occupancy grid is a square array of integers, each side of
-  // which is SIZE elements, in which each element is either 1 or 0. A
-  // 1 indicates the square is occupied, an 0 indicates that it is
-  // free space.
-  readMap(oGrid);   // Read a map in from the file map.txt
-  printMap(oGrid);  // Print the map on the screen
-  writeMap(oGrid);  // Write a map out to the file map-out.txt
-  
-  dialateMap(oGrid);
-  printMap(oGrid);
-  writeMap(oGrid);
-  
-  std::vector<int> myNodes = findPath(-6,-6,6.5,6.5,oGrid);
-  printMap(oGrid);
+	std::vector<int> myNodes = findPath(-6,-6,6.5,6.5,oGrid);
+	printMap(oGrid);
+	findWaypoints(myNodes, oGrid);
+	printMap(oGrid);
 	writeMap(oGrid);
-  
-  findWaypoints(myNodes, oGrid);
-  printMap(oGrid);
-  writeMap(oGrid);
-  writePlan(myNodes);   // Write the plan to the file plan-out.txt
-  
-  
-  pLength = readPlanLength(); // Find out how long the plan is from plan.txt
-  plan = new double[pLength]; // Create enough space to store the plan
-  readPlan(plan, pLength);    // Read the plan from the file plan.txt.
-  printPlan(plan,pLength);    // Print the plan on the screen
+	writePlan(myNodes);   // Write the plan to the file plan-out.txt
+
+	pLength = readPlanLength(); // Find out how long the plan is from plan.txt
+	plan = new double[pLength]; // Create enough space to store the plan
+	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
+	printPlan(plan,pLength);    // Print the plan on the screen
 	
 	std::cout << "Booting up laser." << std::endl;
 	for (int i = 0; i < 3; i++) 
@@ -105,21 +84,21 @@ int main(int argc, char *argv[])
 			//update and print information from the robot
 			robot.Read();
 			pose = readPosition(lp);
-			printRobotData(bp, pose);
+			//printRobotData(bp, pose);
 			
 			if (sp.MinLeft() < .5) { //obstacle avoidance
 				turnrate = sp.MinLeft() - 2;
 				if (bp[0] || bp[1])
 					speed = -sp.MinLeft();
 				else speed = sp.MinLeft()/2;
-				std::cout << "Obstacle avoidance in progress." << std::endl;
+				//std::cout << "Obstacle avoidance in progress." << std::endl;
 			}
 			else if (sp.MinRight() < .5) {	//obstacle avoidance
 				turnrate = 2 - sp.MinRight();
 				if (bp[0] || bp[1])
 					speed = -sp.MinRight();
 				else speed = sp.MinRight()/2;
-				std::cout << "Obstacle avoidance in progress." << std::endl;
+				//std::cout << "Obstacle avoidance in progress." << std::endl;
 			}
 			else {	//locate and move towards position
 				//calculate angle needed to move to end position
@@ -132,11 +111,11 @@ int main(int argc, char *argv[])
 					speed = sqrt(diffY*diffY+diffX*diffX)/2;
 				else speed = 0;	//stay in place and find angle
 				
-				std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
+				//std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
 			}
 			//print info
-			std::cout << "Speed: " << speed << std::endl;      
-			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+			//std::cout << "Speed: " << speed << std::endl;      
+			//std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
 	}
@@ -299,31 +278,28 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 
 
 void findWaypoints (std::vector<int>& myNodes, int map[SIZE][SIZE]) {
-	int lastWaypoint = 0, i = 1;
+	int diffLastY, diffLastX, diffNextY, diffNextX, lastWaypoint = 0;
 	
-	while (i < myNodes.size()-1) {
-		std::cout << "\n" << myNodes[i] << " " << i << " " 
-				  << myNodes[i-1]/100-myNodes[i]/100 << " " << myNodes[i]/100-myNodes[i+1]/100 << " "
-				  << myNodes[i-1]%100-myNodes[i]%100 << " " << myNodes[i]%100-myNodes[i+1]%100 << " ";
-		if ((myNodes[i-1]/100-myNodes[i]/100 == myNodes[i]/100-myNodes[i+1]/100) &&
-			(myNodes[i-1]%100-myNodes[i]%100 == myNodes[i]%100-myNodes[i+1]%100)) {
-			std::cout << "Delete";
-			i++;
-		}
-		else {
-			if (i-lastWaypoint > 0) {
-				std::cout << myNodes[lastWaypoint+1] << " " << myNodes[i-1];
-				myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.begin()+i);
-			}
-			lastWaypoint++;
-			i = lastWaypoint+1;
+	for (int i = 1; i < myNodes.size()-1; i++) {
+		//calculate direction
+		diffLastY = myNodes[i-1]/100-myNodes[i]/100;
+		diffNextY = myNodes[i]/100-myNodes[i+1]/100;
+		diffLastX = myNodes[i-1]%100-myNodes[i]%100;
+		diffNextX = myNodes[i]%100-myNodes[i+1]%100;
+		
+		if (diffLastY != diffNextY || diffLastX != diffNextX) { //if direction changes
+			if (i-lastWaypoint > 1)	//delete nodes between current location and last waypoint
+				myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.begin()+i); 
+			i = ++lastWaypoint;	//update the last waypoint
 		}	
 	}
-	myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.end()-1);
-	std::cout << std::endl << std::endl;
-	for (i = 1; i < myNodes.size(); i++) {
+	if ((myNodes.size()-1) - lastWaypoint > 1)	//for set of nodes between last waypoint and goal
+		myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.end()-1);
+	myNodes.erase(myNodes.begin());	//remove starting location from the waypoint list
+	
+	//update map array
+	for (int i = 0; i < myNodes.size(); i++)
 		map[myNodes[i]/100][myNodes[i]%100] = 4;
-	}
 }
 
 
