@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 		robot.Read();	//to avoid seg fault while booting up
 	double speed, turnrate, diffY, diffX, diffAngle;
 	
-	
+	/*
 	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
 		//navigate to waypoint
 		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-	}
+	} */
 } // end of main()
 
 /**
@@ -233,21 +233,25 @@ void dialateMap(int map[SIZE][SIZE]) {
 
 
 std::vector<int> findPath(double startX, double startY, double endX, double endY, int map[SIZE][SIZE]) {
-	int nodeX = startX*2+15.5;
-	int nodeY = startY*2+15.5;
-	std::vector<int> closedNodes(1, nodeY*100+nodeX);
+	//convert map coordinate to array locations
+	startX = startX*2+16;
+	startY = startY*2+16;
+	endX = endX*2+16;
+	endY = endY*2+16;
 	
-	endX = endX*2+15.5;
-	endY = endY*2+15.5;
-	
-	int minX, minY, minCost = 999, nodeCost = 0;
+	int nodeX = startY, nodeY = startY, nodeCost = 0;
+	int minX = 0, minY = 0, minCost = 9999;
+	std::vector<int> myNodes(1, nodeY*100+nodeX);
 	map[nodeX][nodeY] = 3;
 	
 	while (nodeX != endX || nodeY != endY) {
-		for (int i = nodeY+1; i > nodeY-2; i--) {
-			for (int j = nodeX-1; j < nodeX+2; j++) {
-				if (map[i][j] == 0) {
-					nodeCost = 1 + std::abs(endY-i) + std::abs(endX-j);
+		//check surrounding squares for closest to goal
+		for (int i = nodeY+1; i > nodeY-2 && i >= 0; i--) {
+			if (i > SIZE-1) i--; //boundary check and avoidance
+			for (int j = nodeX-1; j < nodeX+2 && j < SIZE; j++) {
+				if (j < 0) j++; //boundary check and avoidance
+				if (map[i][j] == 0) {	//if node is open
+					nodeCost = std::abs(endY-i) + std::abs(endX-j);
 					if (nodeCost < minCost) {
 						minCost = nodeCost;
 						minY = i;
@@ -256,15 +260,27 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 				}
 			}
 		}
-		nodeY = minY;
-		nodeX = minX;
-		map[nodeY][nodeX] = 3;
-		closedNodes.push_back(nodeY*100+nodeX);
-		minCost = 9999;
+		if (minCost == 9999) {	//should only occur when reaching a dead end
+			if (myNodes.size() == 1) {	//should only occur when completely stuck
+				std::cout << "No path could be found." << std::endl;
+				nodeY = endY; //to terminate while loop
+				nodeX = endX; //to terminate while loop
+			}
+			else {	//backtrack and check for other possible routes
+				nodeY = myNodes.back()/100;
+				nodeX = myNodes.back()%100;
+				myNodes.pop_back();
+			}
+		}
+		else {	//move to location closest to goal
+			nodeY = minY;
+			nodeX = minX;
+			map[nodeY][nodeX] = 3;
+			myNodes.push_back(nodeY*100+nodeX);
+			minCost = 9999;
+		}
 	}
-	for (int i = 0; i < closedNodes.size(); i++)
-		std::cout << closedNodes[i] << std::endl;
-	return closedNodes;
+	return myNodes;
 }
 
 
