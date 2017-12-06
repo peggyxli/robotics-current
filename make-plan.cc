@@ -43,13 +43,16 @@ void writePlan(std::vector<int>);
 
 int main(int argc, char *argv[]) {
 	//Set up proxies to connect the interface to the robot
-	player_pose2d_t pose;   // For handling localization data
+	player_pose2d_t pose;
 	PlayerClient robot("localhost");  
 	BumperProxy bp(&robot, 0);  
 	Position2dProxy pp(&robot, 0);
 	LocalizeProxy lp (&robot, 0);
 	LaserProxy sp (&robot, 0);
+	
 	pp.SetMotorEnable(true);
+	robot.Read();
+	pose = readPosition(lp);
 	
 	int oGrid[SIZE][SIZE];	//the occupancy grid
 	int pLength;
@@ -60,7 +63,7 @@ int main(int argc, char *argv[]) {
 	dialateMap(oGrid);
 	printMap(oGrid);
   
-	std::vector<int> myNodes = findPath(-6,-6,6.5,6.5,oGrid);
+	std::vector<int> myNodes = findPath(pose.px,pose.py,6.5,6.5,oGrid);
 	printMap(oGrid);
 	findWaypoints(myNodes, oGrid);
 	printMap(oGrid);
@@ -232,7 +235,7 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 	endX = endX*2+16;
 	endY = endY*2+16;
 	
-	int nodeX = startY, nodeY = startY, nodeCost = 0;
+	int nodeX = startX, nodeY = startY, nodeCost = 0;
 	int minX = 0, minY = 0, minCost = 9999;
 	std::vector<int> myNodes(1, nodeY*100+nodeX);
 	map[nodeX][nodeY] = 5;	//label starting node on map array
