@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 		robot.Read();	//to avoid seg fault while booting up
 	double speed, turnrate, diffY, diffX, diffAngle;
 	
-	/*
+	
 	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
 		//navigate to waypoint
 		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-	} */
+	}
 } // end of main()
 
 /**
@@ -177,10 +177,16 @@ void readMap(int map[SIZE][SIZE])
  **/
 
 void printMap(int map[SIZE][SIZE]) {
-	for(int i = SIZE - 1; i >= 0; i--) {
+	for(int i = SIZE; i >= -1; i--) {
+		std::cout << "0 ";
 		for(int j = 0; j < SIZE; j++)
-			std::cout << map[i][j] << " ";
-		std::cout << std::endl;
+			if (i == SIZE || i == -1)
+				std::cout << "0 ";
+			else if (map[i][j] == 0)
+				std::cout << "  ";
+			else
+				std::cout << map[i][j] << " ";
+		std::cout << "0\n";
 	}
 	std::cout << std::endl << std::endl;
 } // End of printMap()
@@ -194,20 +200,28 @@ void printMap(int map[SIZE][SIZE]) {
  *
  **/
 
-void writeMap(int map[SIZE][SIZE])
-{
-  std::ofstream mapFile;
-  mapFile.open("map-out.txt");
+void writeMap(int map[SIZE][SIZE]) {
+	std::ofstream mapFile;
+	mapFile.open("map-out.txt");
+	
+	mapFile << "Occupancy grid/map used for pathfinding and navigation\n\nLegend:"
+			<< "\n\t0: Boundary/border\n\t1: Obstacle/occupied square"
+			<< "\n\t2: Dialated obstacle locations\n\t3: Navigated path in search of a route"
+			<< "\n\t4: Waypoints\n\t5: Starting location\n" << std::endl;
 
-  for(int i = SIZE - 1; i >= 0; i--){
-    for(int j = 0; j < SIZE; j++)
-      {
-	mapFile << map[i][j];
-      }
-    mapFile << std::endl;
-  }
-
-  mapFile.close();
+	for(int i = SIZE; i >= -1; i--) {
+		mapFile << "0 ";
+		for(int j = 0; j < SIZE; j++)
+			if (i == SIZE || i == -1)
+				mapFile << "0 ";
+			else if (map[i][j] == 0)
+				mapFile << "  ";
+			else
+				mapFile << map[i][j] << " ";
+		mapFile << "0\n";
+	}
+	mapFile << std::endl;
+	mapFile.close();
 }
 
 
@@ -242,7 +256,7 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 	int nodeX = startY, nodeY = startY, nodeCost = 0;
 	int minX = 0, minY = 0, minCost = 9999;
 	std::vector<int> myNodes(1, nodeY*100+nodeX);
-	map[nodeX][nodeY] = 3;
+	map[nodeX][nodeY] = 5;	//label starting node on map array
 	
 	while (nodeX != endX || nodeY != endY) {
 		//check surrounding squares for closest to goal
@@ -307,7 +321,7 @@ void findWaypoints (std::vector<int>& myNodes, int map[SIZE][SIZE]) {
 	}
 	myNodes.erase(myNodes.begin()+lastWaypoint+1, myNodes.end()-1);
 	std::cout << std::endl << std::endl;
-	for (i = 0; i < myNodes.size(); i++) {
+	for (i = 1; i < myNodes.size(); i++) {
 		map[myNodes[i]/100][myNodes[i]%100] = 4;
 	}
 }
