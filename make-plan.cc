@@ -233,12 +233,12 @@ void dialateMap(int map[SIZE][SIZE]) {
 
 
 std::vector<int> findPath(double startX, double startY, double endX, double endY, int map[SIZE][SIZE]) {
-	int nodeX = startX*2+16;
-	int nodeY = startY*2+16;
+	int nodeX = startX*2+15.5;
+	int nodeY = startY*2+15.5;
 	std::vector<int> closedNodes(1, nodeY*100+nodeX);
 	
-	endX = endX*2+16;
-	endY = endY*2+16;
+	endX = endX*2+15.5;
+	endY = endY*2+15.5;
 	
 	int minX, minY, minCost = 999, nodeCost = 0;
 	map[nodeX][nodeY] = 3;
@@ -471,8 +471,8 @@ void writePlan(std::vector<int> myNodes)
 
   planFile << (myNodes.size()-1)*2 << " ";
   for(int i = 1; i < myNodes.size(); i++){
-	  std::cout << double(myNodes[i]%100)/2-8 << " " << double(myNodes[i]/100)/2-8 << " ";
-    planFile << double(myNodes[i]%100)/2-8 << " " << double(myNodes[i]/100)/2-8 << " ";
+	  std::cout << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
+    planFile << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
   }
 
   planFile.close();
