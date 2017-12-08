@@ -17,12 +17,28 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <queue>
 #include <libplayerc++/playerc++.h>
 using namespace PlayerCc;  
 
-
 const int SIZE = 32; // The number of squares per side of the occupancy grid
-                     // (which we assume to be square)
+
+
+struct Node {
+	int y;
+	int x;
+	double fromStart;
+	double cost;
+	int parent;
+	Node() {x = 0; y = 0; cost = 0; parent = -1;}
+	Node(int y, int x, double fromStart, double cost, int index) {
+		this->y = y; this->x = x; this->fromStart = fromStart; this->cost = cost; parent = index;
+	}
+};
+
+bool operator< (const Node& node1, const Node& node2) {return node1.cost > node2.cost;}
+bool operator> (const Node& node1, const Node& node2) {return node1.cost < node2.cost;}					 
+
 
 player_pose2d_t readPosition(LocalizeProxy& lp);
 void printRobotData(BumperProxy& bp, player_pose2d_t pose);
@@ -87,21 +103,21 @@ int main(int argc, char *argv[]) {
 			//update and print information from the robot
 			robot.Read();
 			pose = readPosition(lp);
-			//printRobotData(bp, pose);
+			printRobotData(bp, pose);
 			
 			if (sp.MinLeft() < .5) { //obstacle avoidance
 				turnrate = sp.MinLeft() - 2;
 				if (bp[0] || bp[1])
 					speed = -sp.MinLeft();
 				else speed = sp.MinLeft()/2;
-				//std::cout << "Obstacle avoidance in progress." << std::endl;
+				std::cout << "Obstacle avoidance in progress." << std::endl;
 			}
 			else if (sp.MinRight() < .5) {	//obstacle avoidance
 				turnrate = 2 - sp.MinRight();
 				if (bp[0] || bp[1])
 					speed = -sp.MinRight();
 				else speed = sp.MinRight()/2;
-				//std::cout << "Obstacle avoidance in progress." << std::endl;
+				std::cout << "Obstacle avoidance in progress." << std::endl;
 			}
 			else {	//locate and move towards position
 				//calculate angle needed to move to end position
@@ -110,15 +126,15 @@ int main(int argc, char *argv[]) {
 				diffAngle = atan2(diffY, diffX) - pose.pa;
 				
 				turnrate = diffAngle;	//set turnrate
-				if (std::abs(diffAngle) < 0.001)	//move to position
+				if (std::abs(diffAngle) < 0.01)	//move to position
 					speed = sqrt(diffY*diffY+diffX*diffX)/2;
 				else speed = 0;	//stay in place and find angle
 				
-				//std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
+				std::cout << "We are going to\nX: " << plan[i] << "\nY: " << plan[i+1] << std::endl;
 			}
 			//print info
-			//std::cout << "Speed: " << speed << std::endl;      
-			//std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
+			std::cout << "Speed: " << speed << std::endl;      
+			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
 	}
@@ -164,7 +180,7 @@ void printMap(int map[SIZE][SIZE]) {
 		for(int j = 0; j < SIZE; j++)
 			if (i == SIZE || i == -1)
 				std::cout << "0 ";
-			else if (map[i][j] == 0)
+			else if (map[i][j] == 0 || map[i][j] == 6)
 				std::cout << "  ";
 			else
 				std::cout << map[i][j] << " ";
@@ -207,7 +223,6 @@ void writeMap(int map[SIZE][SIZE]) {
 }
 
 
-
 void dialateMap(int map[SIZE][SIZE]) {
 	for(int i = SIZE-1; i >= 0; i--) {
 		for(int j = 0; j < SIZE; j++) {
@@ -235,47 +250,54 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 	endX = endX*2+16;
 	endY = endY*2+16;
 	
-	int nodeX = startX, nodeY = startY, nodeCost = 0;
-	int minX = 0, minY = 0, minCost = 9999;
-	std::vector<int> myNodes(1, nodeY*100+nodeX);
-	map[nodeX][nodeY] = 5;	//label starting node on map array
+	double distFromStart = 0, distanceToGoal = 0, nodeCost = 0;
+	std::priority_queue<Node, std::vector<Node>,std::less<std::vector<Node>::value_type> > openNodes;
+	std::vector<Node> closedNodes;
+	Node myNode(startY, startX, 0, 0, -1);
 	
-	while (nodeX != endX || nodeY != endY) {
+	while (myNode.x != endX || myNode.y != endY) {
+		//mark current node as closed
+		closedNodes.push_back(myNode);
+		map[myNode.y][myNode.x] = 6;
+
 		//check surrounding squares for closest to goal
-		for (int i = nodeY+1; i > nodeY-2 && i >= 0; i--) {
-			if (i > SIZE-1) i--; //boundary check and avoidance
-			for (int j = nodeX-1; j < nodeX+2 && j < SIZE; j++) {
-				if (j < 0) j++; //boundary check and avoidance
+		for (int i = myNode.y+1; i > myNode.y-2 && i >= 0; i--) {
+			if (i > SIZE-1) i--; //boundary avoidance
+			for (int j = myNode.x-1; j < myNode.x+2 && j < SIZE; j++) {
+				if (j < 0) j++; //boundary avoidance
 				if (map[i][j] == 0) {	//if node is open
-					nodeCost = std::abs(endY-i) + std::abs(endX-j);
-					if (nodeCost < minCost) {
-						minCost = nodeCost;
-						minY = i;
-						minX = j;
-					}
+					distFromStart = myNode.fromStart +
+							sqrt((myNode.y-i)*(myNode.y-i)+(myNode.x-j)*(myNode.x-j));
+					distanceToGoal = sqrt((endY-i)*(endY-i)+(endX-j)*(endX-j));
+					nodeCost = distFromStart+distanceToGoal;
+					openNodes.push(Node(i,j, distFromStart, nodeCost, closedNodes.size()-1));
 				}
 			}
 		}
-		if (minCost == 9999) {	//should only occur when reaching a dead end
-			if (myNodes.size() == 1) {	//should only occur when completely stuck
-				std::cout << "No path could be found." << std::endl;
-				nodeY = endY; //to terminate while loop
-				nodeX = endX; //to terminate while loop
-			}
-			else {	//backtrack and check for other possible routes
-				nodeY = myNodes.back()/100;
-				nodeX = myNodes.back()%100;
-				myNodes.pop_back();
-			}
+		if (!openNodes.empty()) {
+			do {
+				myNode = openNodes.top();
+				openNodes.pop();
+			} while (map[myNode.y][myNode.x] != 0);
 		}
-		else {	//move to location closest to goal
-			nodeY = minY;
-			nodeX = minX;
-			map[nodeY][nodeX] = 3;
-			myNodes.push_back(nodeY*100+nodeX);
-			minCost = 9999;
+		else {
+			std::cout << "No path could be found." << std::endl;
+			myNode.y = endY; //to terminate while loop
+			myNode.x = endX; //to terminate while loop
 		}
 	}
+	
+	std::vector<int> myNodes;
+	while (myNode.parent != -1) {
+		myNodes.push_back(myNode.y*100+myNode.x);
+		map[myNode.y][myNode.x] = 3;
+		myNode = closedNodes[myNode.parent];
+	}
+	
+	myNodes.push_back(myNode.y*100+myNode.x);
+	map[myNode.y][myNode.x] = 5;
+	std::reverse(myNodes.begin(), myNodes.end());
+	
 	return myNodes;
 }
 
@@ -475,15 +497,13 @@ void printPlan(double *plan , int length)
 
 void writePlan(std::vector<int> myNodes)
 {
-  std::ofstream planFile;
-  planFile.open("plan-out.txt");
+	std::ofstream planFile;
+	planFile.open("plan-out.txt");
 
-  planFile << (myNodes.size()-1)*2 << " ";
-  for(int i = 1; i < myNodes.size(); i++){
-	  std::cout << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
-    planFile << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
-  }
-
-  planFile.close();
-
+	planFile << (myNodes.size()-1)*2 << " ";
+	for(int i = 1; i < myNodes.size(); i++) {
+		std::cout << myNodes[i] << " " << double(myNodes[i]%100)/2 << " " <<double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " " << std::endl;
+		planFile << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
+	}
+	planFile.close();
 } // End of writePlan
