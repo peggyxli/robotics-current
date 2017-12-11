@@ -27,12 +27,19 @@ const int SIZE = 32; // The number of squares per side of the occupancy grid
 struct Node {
 	int y;
 	int x;
-	double fromStart;
+	double distanceFromStart;
 	double cost;
-	int parent;
-	Node() {x = 0; y = 0; cost = 0; parent = -1;}
-	Node(int y, int x, double fromStart, double cost, int index) {
-		this->y = y; this->x = x; this->fromStart = fromStart; this->cost = cost; parent = index;
+	Node* parent;
+	Node(): y(0), x(0), distanceFromStart(0), cost(0), parent(NULL) {};
+	Node(int a, int b, int endY, int endX, Node* myPointer = NULL): y(a), x(b), parent(myPointer) {
+		if (parent != NULL) {	//add distance from parent
+			distanceFromStart = parent->distanceFromStart;
+			distanceFromStart += sqrt((parent->y-y)*(parent->y-y)+(parent->x-x)*(parent->x-x));	
+		}
+		else distanceFromStart = 0;
+		
+		//add distance to goal
+		cost = distanceFromStart + sqrt((endY-y)*(endY-y)+(endX-x)*(endX-x));
 	}
 };
 
@@ -75,14 +82,11 @@ int main(int argc, char *argv[]) {
 	double *plan;	
 
 	readMap(oGrid);   // Read a map in from the file map.txt
-	printMap(oGrid);  // Print the map on the screen
-	dialateMap(oGrid);
-	printMap(oGrid);
-  
+	dialateMap(oGrid);  
 	std::vector<int> myNodes = findPath(pose.px,pose.py,6.5,6.5,oGrid);
-	printMap(oGrid);
 	findWaypoints(myNodes, oGrid);
 	printMap(oGrid);
+	
 	writeMap(oGrid);
 	writePlan(myNodes);   // Write the plan to the file plan-out.txt
 
@@ -151,9 +155,7 @@ int main(int argc, char *argv[]) {
  * grid would if you drew it on paper.
  *
  **/
-
-void readMap(int map[SIZE][SIZE])
-{
+void readMap(int map[SIZE][SIZE]){
 	std::ifstream mapFile;
 	mapFile.open("map.txt");
 
@@ -173,7 +175,6 @@ void readMap(int map[SIZE][SIZE])
  * map.txt
  *
  **/
-
 void printMap(int map[SIZE][SIZE]) {
 	for(int i = SIZE; i >= -1; i--) {
 		std::cout << "0 ";
@@ -197,7 +198,6 @@ void printMap(int map[SIZE][SIZE]) {
  * of the file look like the relevant occupancy grid.
  *
  **/
-
 void writeMap(int map[SIZE][SIZE]) {
 	std::ofstream mapFile;
 	mapFile.open("map-out.txt");
@@ -250,53 +250,53 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 	endX = endX*2+16;
 	endY = endY*2+16;
 	
-	double distFromStart = 0, distanceToGoal = 0, nodeCost = 0;
-	std::priority_queue<Node, std::vector<Node>,std::less<std::vector<Node>::value_type> > openNodes;
-	std::vector<Node> closedNodes;
-	Node myNode(startY, startX, 0, 0, -1);
 	
-	while (myNode.x != endX || myNode.y != endY) {
-		//mark current node as closed
-		closedNodes.push_back(myNode);
-		map[myNode.y][myNode.x] = 6;
-
+	std::priority_queue<Node, std::vector<Node>,std::less<std::vector<Node>::value_type> > openNodes;
+	Node* myNode = new Node(startY, startX, endY, endX);
+	std::vector<Node*> closedNodes (1, myNode);
+	map[myNode->y][myNode->x] = 5;	//mark starting node
+	
+	while (myNode->x != endX || myNode->y != endY) {
 		//check surrounding squares for closest to goal
-		for (int i = myNode.y+1; i > myNode.y-2 && i >= 0; i--) {
+		for (int i = myNode->y+1; i > myNode->y-2 && i >= 0; i--) {
 			if (i > SIZE-1) i--; //boundary avoidance
-			for (int j = myNode.x-1; j < myNode.x+2 && j < SIZE; j++) {
+			for (int j = myNode->x-1; j < myNode->x+2 && j < SIZE; j++) {
 				if (j < 0) j++; //boundary avoidance
-				if (map[i][j] == 0) {	//if node is open
-					distFromStart = myNode.fromStart +
-							sqrt((myNode.y-i)*(myNode.y-i)+(myNode.x-j)*(myNode.x-j));
-					distanceToGoal = sqrt((endY-i)*(endY-i)+(endX-j)*(endX-j));
-					nodeCost = distFromStart+distanceToGoal;
-					openNodes.push(Node(i,j, distFromStart, nodeCost, closedNodes.size()-1));
-				}
+				if (map[i][j] == 0)	//if node is open
+					openNodes.push(Node(i,j, endY, endX, myNode));
 			}
 		}
 		if (!openNodes.empty()) {
-			do {
-				myNode = openNodes.top();
+			while (map[openNodes.top().y][openNodes.top().x] != 0)
 				openNodes.pop();
-			} while (map[myNode.y][myNode.x] != 0);
+			myNode = new Node(openNodes.top());	//get new node
+			openNodes.pop(); 
+			
+			//mark new node as closed
+			closedNodes.push_back(myNode);
+			map[myNode->y][myNode->x] = 6;
 		}
 		else {
 			std::cout << "No path could be found." << std::endl;
-			myNode.y = endY; //to terminate while loop
-			myNode.x = endX; //to terminate while loop
+			myNode->y = endY; //to terminate while loop
+			myNode->x = endX; //to terminate while loop
 		}
 	}
 	
-	std::vector<int> myNodes;
-	while (myNode.parent != -1) {
-		myNodes.push_back(myNode.y*100+myNode.x);
-		map[myNode.y][myNode.x] = 3;
-		myNode = closedNodes[myNode.parent];
-	}
 	
-	myNodes.push_back(myNode.y*100+myNode.x);
-	map[myNode.y][myNode.x] = 5;
+	std::vector<int> myNodes;
+	while (myNode->parent != NULL) {	//find path from end to start
+		myNodes.push_back(myNode->y*100+myNode->x);
+		map[myNode->y][myNode->x] = 3;
+		myNode = myNode->parent;
+	}
+	myNodes.push_back(myNode->y*100+myNode->x);
 	std::reverse(myNodes.begin(), myNodes.end());
+	
+	
+	for (int i = 0; i < closedNodes.size(); i++) { //free up memory on heap
+		delete closedNodes[i];
+	}
 	
 	return myNodes;
 }
@@ -328,7 +328,6 @@ void findWaypoints (std::vector<int>& myNodes, int map[SIZE][SIZE]) {
 }
 
 
-
 /**
  * readPosition()
  *
@@ -338,7 +337,6 @@ void findWaypoints (std::vector<int>& myNodes, int map[SIZE][SIZE]) {
  * the mean, which is a pose. 
  *
  **/
-
 player_pose2d_t readPosition(LocalizeProxy& lp)
 {
 
@@ -502,7 +500,6 @@ void writePlan(std::vector<int> myNodes)
 
 	planFile << (myNodes.size()-1)*2 << " ";
 	for(int i = 1; i < myNodes.size(); i++) {
-		std::cout << myNodes[i] << " " << double(myNodes[i]%100)/2 << " " <<double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " " << std::endl;
 		planFile << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
 	}
 	planFile.close();
