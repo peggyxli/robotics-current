@@ -86,7 +86,6 @@ int main(int argc, char *argv[]) {
 	std::vector<int> myNodes = findPath(pose.px,pose.py,6.5,6.5,oGrid);
 	findWaypoints(myNodes, oGrid);
 	printMap(oGrid);
-	
 	writeMap(oGrid);
 	writePlan(myNodes);   // Write the plan to the file plan-out.txt
 
@@ -95,12 +94,13 @@ int main(int argc, char *argv[]) {
 	readPlan(plan, pLength);    // Read the plan from the file plan.txt.
 	printPlan(plan,pLength);    // Print the plan on the screen
 	
+	
 	std::cout << "Booting up laser." << std::endl;
 	for (int i = 0; i < 3; i++) 
 		robot.Read();	//to avoid seg fault while booting up
 	double speed, turnrate, diffY, diffX, diffAngle;
 	
-	
+	/*
 	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
 		//navigate to waypoint
 		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-	}
+	}*/
 } // end of main()
 
 /**
@@ -204,7 +204,7 @@ void writeMap(int map[SIZE][SIZE]) {
 	
 	mapFile << "Occupancy grid/map used for pathfinding and navigation\n\nLegend:"
 			<< "\n\t0: Boundary/border\n\t1: Obstacle/occupied square"
-			<< "\n\t2: Dialated obstacle locations\n\t3: Navigated path in search of a route"
+			<< "\n\t2: Dialated obstacle locations\n\t3: Expected path"
 			<< "\n\t4: Waypoints\n\t5: Starting location\n" << std::endl;
 
 	for(int i = SIZE; i >= -1; i--) {
@@ -212,7 +212,7 @@ void writeMap(int map[SIZE][SIZE]) {
 		for(int j = 0; j < SIZE; j++)
 			if (i == SIZE || i == -1)
 				mapFile << "0 ";
-			else if (map[i][j] == 0)
+			else if (map[i][j] == 0 || map[i][j] == 6)
 				mapFile << "  ";
 			else
 				mapFile << map[i][j] << " ";
@@ -237,6 +237,17 @@ void dialateMap(int map[SIZE][SIZE]) {
 					map[i][j] = 2;
 				else if (map[i][j] == 1 && map[i][j+1] == 0)
 					map[i][j+1] = 2;
+			}
+			if (i > 0 && j < SIZE-1) {
+				/*if (map[i][j] == 0 && map[i-1][j+1] == 1)
+					map[i][j] = 2;
+				else if (map[i][j] == 1 && map[i-1][j+1] == 0)
+					map[i-1][j+1] = 2;*/
+				
+				if (map[i-1][j] == 0 && map[i][j+1] == 1)
+					map[i][j] = 2;
+				else if (map[i-1][j] == 1 && map[i][j+1] == 0)
+					map[i-1][j+1] = 2;
 			}
 		}
 	}
@@ -498,8 +509,8 @@ void writePlan(std::vector<int> myNodes)
 	std::ofstream planFile;
 	planFile.open("plan-out.txt");
 
-	planFile << (myNodes.size()-1)*2 << " ";
-	for(int i = 1; i < myNodes.size(); i++) {
+	planFile << (myNodes.size())*2 << " ";
+	for(int i = 0; i < myNodes.size(); i++) {
 		planFile << double(myNodes[i]%100)/2-7.75 << " " << double(myNodes[i]/100)/2-7.75 << " ";
 	}
 	planFile.close();
