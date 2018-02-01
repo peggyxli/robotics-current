@@ -1,16 +1,10 @@
 /**
- * make-plan.cc
- * 
- * Sample code for a robot that has two front bumpers and a laser, and
- * which is provided with localization data.
- *
- * The code also allows the controller to read and write a "plan", a sequence
- * of location that the robot should move to and to read in a "map", a matrix
- * of 1 and 0 values that can be used as an occupancy grid.
- *
- * Written by: Simon Parsons
- * Date:       4th December 2011
- *  
+ * Robotics class project #6
+ * Modified version of make-plan.cc, originally written by Simon Parsons
+ * Creates a path for a Roomba/Create to navigate around obstacles to a specified goal location
+ * Reads in and uses a premade occupancy grid (map.txt)
+ * Includes navigation code for the Roomba/Create to move along the path
+ * Group 5: Randolph Cisneros, Arsenii Lyzenko, Peggy Li
  **/
 
 
@@ -100,7 +94,7 @@ int main(int argc, char *argv[]) {
 		robot.Read();	//to avoid seg fault while booting up
 	double speed, turnrate, diffY, diffX, diffAngle;
 	
-	/*
+	
 	for (int i = 0; i < pLength; i = i + 2) {	//for each pair of coordinates
 		//navigate to waypoint
 		while (std::abs(pose.px - plan[i]) > 0.01 || std::abs(pose.py - plan[i + 1]) > 0.01) {
@@ -141,8 +135,9 @@ int main(int argc, char *argv[]) {
 			std::cout << "Turn rate: " << turnrate << std::endl << std::endl;
 			pp.SetSpeed(speed, turnrate);
 		}
-	}*/
+	}
 } // end of main()
+
 
 /**
  * readMap
@@ -155,7 +150,7 @@ int main(int argc, char *argv[]) {
  * grid would if you drew it on paper.
  *
  **/
-void readMap(int map[SIZE][SIZE]){
+void readMap(int map[SIZE][SIZE]) {
 	std::ifstream mapFile;
 	mapFile.open("map.txt");
 
@@ -163,8 +158,7 @@ void readMap(int map[SIZE][SIZE]){
 		for(int j = 0; j < SIZE; j++)
 			mapFile >> map[i][j];
 	}
-
-  mapFile.close();
+	mapFile.close();
 } // End of readMap()
 
 /**
@@ -216,44 +210,57 @@ void writeMap(int map[SIZE][SIZE]) {
 				mapFile << "  ";
 			else
 				mapFile << map[i][j] << " ";
-		mapFile << "0\n";
+		mapFile << "0\n"; 
 	}
 	mapFile << std::endl;
 	mapFile.close();
 }
 
 
+/**
+ * Dialates an occupancy grid
+ * Assumes the grid is marked with 1's for obstacles and 0's for open spaces
+ * Done to prevent the robot from creating a path that causes it to run into corners 
+ */
 void dialateMap(int map[SIZE][SIZE]) {
-	for(int i = SIZE-1; i >= 0; i--) {
-		for(int j = 0; j < SIZE; j++) {
-			if (i > 0) {
-				if (map[i][j] == 0 && map[i-1][j] == 1)
-					map[i][j] = 2;
-				else if (map[i][j] == 1 && map[i-1][j] == 0)
-					map[i-1][j] = 2;
+	for(int i = SIZE-1; i > 0; i--) {
+		for(int j = 0; j < SIZE-1; j++) {	//check surrounding nodes
+			if (map[i][j] == 1) {	
+				if (map[i][j+1] == 0) map[i][j+1] = 2;
+				if (map[i-1][j] == 0) map[i-1][j] = 2;
+				if (map[i-1][j+1] == 0) map[i-1][j+1] = 2;
 			}
-			if (j < SIZE-1) {
-				if (map[i][j] == 0 && map[i][j+1] == 1)
-					map[i][j] = 2;
-				else if (map[i][j] == 1 && map[i][j+1] == 0)
-					map[i][j+1] = 2;
+			else if (map[i][j+1] == 1) {
+				if (map[i][j] == 0) map[i][j] = 2;
+				if (map[i-1][j] == 0) map[i-1][j] = 2;
 			}
-			if (i > 0 && j < SIZE-1) {
-				/*if (map[i][j] == 0 && map[i-1][j+1] == 1)
-					map[i][j] = 2;
-				else if (map[i][j] == 1 && map[i-1][j+1] == 0)
-					map[i-1][j+1] = 2;*/
-				
-				if (map[i-1][j] == 0 && map[i][j+1] == 1)
-					map[i][j] = 2;
-				else if (map[i-1][j] == 1 && map[i][j+1] == 0)
-					map[i-1][j+1] = 2;
+			else if (map[i-1][j] == 1) {
+				if (map[i][j] == 0) map[i][j] = 2;
+				if (map[i][j+1] == 0) map[i][j+1] = 2; 
 			}
+			else if (map[i][j] == 0 && map[i-1][j+1] == 1)
+				map[i][j] = 2;	
 		}
+		//end case; needed to prevent segmentation fault
+		if (map[i][SIZE-1] == 0 && map[i-1][SIZE-1] == 1)
+			map[i][SIZE-1] = 2;
+		else if (map[i][SIZE-1] == 1 && map[i-1][SIZE-1] == 0)
+			map[i-1][SIZE-1] = 2;
+	}
+	//end case; needed to prevent segmentation fault
+	for(int j = 0; j < SIZE-1; j++) {
+		if (map[0][j] == 0 && map[0][j+1] == 1)
+			map[0][j] = 2;
+		else if (map[0][j] == 1 && map[0][j+1] == 0)
+			map[0][j+1] = 2;
 	}
 }
 
 
+/**
+ * Finds a path around an occupancy grid
+ * Assumes the map is marked with 0's for open spaces
+ */
 std::vector<int> findPath(double startX, double startY, double endX, double endY, int map[SIZE][SIZE]) {
 	//convert map coordinate to array locations
 	startX = startX*2+16;
@@ -313,6 +320,9 @@ std::vector<int> findPath(double startX, double startY, double endX, double endY
 }
 
 
+/**
+ * Finds waypoints from a list of nodes and marks them on an occupancy grid
+ */
 void findWaypoints (std::vector<int>& myNodes, int map[SIZE][SIZE]) {
 	int diffLastY, diffLastX, diffNextY, diffNextX, lastWaypoint = 0;
 	
